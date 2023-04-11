@@ -65,33 +65,42 @@ def parse_args(args=None):
 
 
 def execute_generic_function(script_):
-    # print(script_)
-    subprocess.call(script_, shell=True)
+    print(script_)
+    # subprocess.call(script_, shell=True)
 
 
 def generate_command_lines(sample_id, input_path, output_path, read1_extension, read2_extension, analysis_step, **kwargs):
-    output_path.mkdir(parents=True, exist_ok=True)
     
     forward_read = sample_id + read1_extension
     reverse_read = sample_id + read2_extension
-    script = ""
+    script = "undefined"
     
     for parameter in kwargs:
         kwargs[parameter]
     
     try:
         all_files = os.listdir(input_path)
-        assert (
-            all([file in all_files for file in [forward_read, reverse_read]]) == True
-            ), "Check if pair-end files exist for %s." %(sample_id)
-        
+
+        # Check if paired-end files exist
+        if analysis_step != "dedup":
+            assert (
+                all([file in all_files for file in [forward_read, reverse_read]]) == True
+                ), "Check if pair-end files exist for %s." %(sample_id)
+        # else:
+        #     align_file = sample_id + "_align.out.sam"
+        #     print(align_file)
+        #     print(all_files)
+        #     assert (
+        #         align_file in all_files == True
+        #         ), "No alignment file for %s." %(sample_id)
     except Exception as e:
         print(e)
         
     else: 
+        # Define file requirements for each analysis task and write scripts
         if analysis_step == "extract":    
-            try: 
-                assert ("barcode" in kwargs), "Check barcode!"
+            try:
+                assert ("barcode" in kwargs), "UMI-extract requires custom barcode(s). Check them!"
             except Exception as e:
                 print(e)
             else:
@@ -130,7 +139,7 @@ def generate_command_lines(sample_id, input_path, output_path, read1_extension, 
                 genome_dir = kwargs["genome_dir"]
                 script = "$STAR \
                     --genomeDir %s \
-                    --runThreadN 50 \
+                    --runThreadN 20 \
                     --readFilesIn %s %s \
                     --outFileNamePrefix %s" %(
                     genome_dir, 
@@ -141,8 +150,10 @@ def generate_command_lines(sample_id, input_path, output_path, read1_extension, 
         if analysis_step == "dedup":
             script = "umi_tools dedup \
                 --stdin=%s \
+                --log=%s\
 	            --in-sam --out-sam > %s"%(
-                input_path.joinpath(sample_id + "_"), #TODO
+                input_path.joinpath(sample_id + "_Align.out.sam"), 
+                input_path.joinpath(sample_id + ".dedup.log"), 
                 output_path.joinpath(sample_id + ".sam")
             )
              
@@ -153,6 +164,7 @@ def execute_workflow(args=None):
     args = parse_args(args)
     print(args)
     
+    # Define variables by arguments from config file
     input_path = Path(args.input_path)
     raw_files_path = input_path.joinpath('raw_files')
     processed_files_path = input_path.joinpath('processed')
@@ -161,49 +173,54 @@ def execute_workflow(args=None):
     barcode = args.barcode
     genome_dir = input_path.joinpath(args.genome_dir)
 
-
+    # Check if raw files are in raw_files_path
     try:
         raw_files = os.listdir(raw_files_path)
         assert (len(raw_files) != 0), "Check if raw fastq files exist."
-        
-        for result_folder in ['extracted', 'extracted.trimmed', 'extracted.trimmed.aligned', 'extracted.trimmed.aligned.dedup']:
-            new_folder = processed_files_path.joinpath(result_folder)
-            new_folder.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         print(e)
         
     
     print ("========== Initialized workflow ==========")
+    # Get sample IDS by removing extension indicating forward/reverse reads
     sample_ids = [file.replace(read1_extension, '').replace(read2_extension, '') for file in os.listdir(raw_files_path) \
-        if file.endswith('fastq')]
+        if file.endswith('.fastq') | file.endswith('.fastq.gz')]
     sample_ids = sorted(list(set(sample_ids)))
     print(sample_ids)    
     
     
-    input_path = raw_files_path
-    output_path = processed_files_path.joinpath('extracted')
-    output_path.mkdir(parents=True, exist_ok=True)
     command_list = defaultdict(list)
+    tasks = ['extract', 'trim', 'align', 'dedup']
     
-    for sample_id in sample_ids:
-        command_line = generate_command_lines(sample_id=sample_id, input_path=input_path, output_path=output_path, 
-             read1_extension=read1_extension, read2_extension=read2_extension, analysis_step="extract", 
-             barcode=barcode)
-        command_list['extract'].append(command_line)
+    # For each task, create and execute bash script 
+    for task_id, task in enumerate(tasks): 
+        print(str(task_id) + " " + task)
         
-    with multiprocessing.Pool() as pool:
-        pool.map(execute_generic_function, command_list['extract'])
+        # Extract step takes data from raw_files_path and creates output to be stored in processed_files_path/extract
+        if task == 'extract':
+            input_path = raw_files_path
+            output_path = processed_files_path.joinpath('extract')   
+        else:
+            # For later steps, output_path is named by completed tasks appended together and stored in 
+            # processed_files_path. input_path is the path to output of the previous task 
+            input_path = processed_files_path.joinpath('.'.join(tasks[:(task_id)]))
+            output_path = processed_files_path.joinpath('.'.join(tasks[:task_id+1]))
+    
+        # If task has not been initiated
+        if os.path.isdir(output_path) != False:
+            # Create path to store outputs
+            output_path.mkdir(parents=True, exist_ok=True)
         
-        # command_line = generate_command_lines(sample_id=sample_id, input_path=input_path, output_path=output_path, 
-        #      read1_extension=read1_extension, read2_extension=read2_extension, analysis_step="trim")
-        
-        # command_line = generate_command_lines(sample_id=sample_id, input_path=input_path, output_path=output_path, 
-        #      read1_extension=read1_extension, read2_extension=read2_extension, analysis_step="align", 
-        #      genome_dir=genome_dir)
-        
-        # command_line = generate_command_lines(sample_id=sample_id, input_path=input_path, output_path=output_path, 
-        #      read1_extension=read1_extension, read2_extension=read2_extension, analysis_step="dedup")
-        
+            # Generate command lines for each sample
+            for sample_id in sample_ids:
+                command_line = generate_command_lines(sample_id=sample_id, input_path=input_path, output_path=output_path, 
+                    read1_extension=read1_extension, read2_extension=read2_extension, analysis_step=task,
+                    barcode=barcode, genome_dir=genome_dir)
+                command_list[task].append(command_line)
+                
+            # Execute command lines for samples simultaneously 
+            with multiprocessing.Pool() as pool:
+                pool.map(execute_generic_function, command_list[task])
     print("========== Finished ==========")
 
 
