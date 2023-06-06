@@ -9,13 +9,13 @@ annotationfile="/home/dhthutrang/TEST/mRNA_seq/genome_mouse/mus/refFlat.txt"
 
 wtRNAtablename=" RNA1 "
 wtRNAexp="IMP2"
-wtRNAtp="3"
+wtRNAtp="6"
 RNAtablename="RNA1"
 RNAexp="IMP2"
 
 #edit the timepoint array as needed
 # timepoint=(3 4 5)
-timepoint=(4 5 6 7 8 9)
+timepoint=(7 8 9)
 # one or more samples can be run by altering this array. 
 #---------------
 
