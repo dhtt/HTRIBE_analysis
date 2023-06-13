@@ -39,7 +39,10 @@ done
 for HYPERTRIBE_FILE in $OUTDIR/*.bedgraph
 do
     OUTFILE="${HYPERTRIBE_FILE%.*}"
-    perl $HYPERTRIBE/summarize_results.pl $HYPERTRIBE_FILE > $OUTFILE.xls
+    bedtools groupby -i $HYPERTRIBE_FILE -g 1-26 -c 1 -o first > $HYPERTRIBE_FILE.grouped
+    perl $HYPERTRIBE/summarize_results.pl $HYPERTRIBE_FILE.grouped > $OUTFILE.xls
 done
 
 rm $OUTDIR/*.temp
+
+

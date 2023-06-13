@@ -94,7 +94,7 @@ if __name__ == '__main__':
                     protocol=pickle.HIGHEST_PROTOCOL)
 
     # Generate Venn diagram to compare the overlap between the detected genes for different comparisons
-    generate_venn_diagram(genes_by_comparison_type_=generate_venn_diagram,
+    generate_venn_diagram(genes_by_comparison_type_=genes_by_comparison_type,
                           analyzed_result_path_=analyzed_result_path, threshold_=threshold)
 
     # Store number of editing sites identified for each gene from a pairwise comparison in coords_by_no_editing_sites
@@ -126,12 +126,12 @@ if __name__ == '__main__':
         coords_by_no_editing_sites[str(
             comparison_1 + ':' + comparison_2)] = coords
 
-    with open(analyzed_result_path.joinpath('coords_by_no_editing_sites.pickle'), 'wb') as file:
+    with open(analyzed_result_path.joinpath('coords_by_no_editing_sites' + threshold + '.pickle'), 'wb') as file:
         pickle.dump(coords_by_no_editing_sites, file,
                     protocol=pickle.HIGHEST_PROTOCOL)
 
     # Create a dataframe for scatter plot comparing the gene result identified from the comparisons
-    with open(analyzed_result_path.joinpath('coords_by_no_editing_sites.pickle'), 'rb') as file:
+    with open(analyzed_result_path.joinpath('coords_by_no_editing_sites' + threshold + '.pickle'), 'rb') as file:
         coords_by_no_editing_sites = pickle.load(file)
     comparison_pair = list(coords_by_no_editing_sites.keys())
     all_comparisons = []
@@ -148,13 +148,15 @@ if __name__ == '__main__':
         df = df.fillna(0)
         df['comparison_type'] = comparison_1 + '_' + comparison_2
         df['gene_name'] = df.index
-
+        axis_lim = max(max(df['comparison_1']), max(df['comparison_2']))
+        
         # Plot genes identified from the comparisons by the number of editing sites
         fig, ax = plt.subplots(figsize=(5, 4),  nrows=1, ncols=1)
         ax = sns.scatterplot(data=df, x='comparison_1', y='comparison_2',
                              hue='presence', palette={'Both comparisons': 'green', 'Either comparison': 'orange'},
                              style='presence', markers={'Both comparisons': 'o', 'Either comparison': 'X'},
                              linewidth=0, alpha=0.4)
+        ax.plot([0, axis_lim], [0, axis_lim], 'red', linestyle='dashed', alpha = 0.6)
 
         ax.set(title='Genes with A2G identified from the\npairwise comparisons (T = ' + threshold + ')',
                xlabel=comparison_1, ylabel=comparison_2)
@@ -171,9 +173,15 @@ if __name__ == '__main__':
 
     # Combined scatter plot from all type of pair comparisons at once
     all_comparisons_df = pd.concat(all_comparisons)
+    special_genes = all_comparisons_df[(all_comparisons_df['presence'] == 'Both comparisons') & (all_comparisons_df['comparison_type'] == 'wt_imp2_mcherry_imp2')]
+    special_genes = special_genes.sort_values(by=['comparison_1', 'comparison_2'])
+    print(special_genes.tail(10))
+    
+    axis_lim = max(max(all_comparisons_df['comparison_1']), max(all_comparisons_df['comparison_2']))
     fig, ax = plt.subplots(figsize=(5, 4),  nrows=1, ncols=1)
     ax = sns.scatterplot(data=all_comparisons_df, x='comparison_1', y='comparison_2',
                          hue='comparison_type', alpha=0.4, linewidth=0.5)
+    ax.plot([0, axis_lim], [0, axis_lim], 'red', linestyle='dashed', alpha = 0.6)
     ax.set(title='Genes with A2G identified from the\npairwise comparisons (T = ' + threshold + ')',
            xlabel='Comparison 1', ylabel='Comparison 2')
     plt.legend(title='Comparison type',
