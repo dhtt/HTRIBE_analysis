@@ -15,7 +15,7 @@ from collections import defaultdict
 from matplotlib_venn import venn3_circles, venn3
 from itertools import combinations
 from math import nan
-
+from helper_functions import create_new_folder
 
 def read_bedgraph(result_dir: str, threshold: str):
     '''This function reads HYPERTRIBE result files in xls format and return a data frame of concatenated results
@@ -59,7 +59,6 @@ def generate_venn_diagram(genes_by_comparison_type_, analyzed_result_path_, thre
         'overlap_' + threshold_ + '.png'))
     plt.close(fig)
 
-
 if __name__ == '__main__':
     # HTRIBE_result_path = sys.argv[1]
     # threshold = sys.argv[2]
@@ -71,8 +70,7 @@ if __name__ == '__main__':
 
     # Create a folder storing results
     analyzed_result_path = Path(HTRIBE_result_path).joinpath('analyzed_result')
-    if os.path.exists(analyzed_result_path) == False:
-        os.mkdir(analyzed_result_path)
+    create_new_folder(analyzed_result_path)
 
     # Gather a dictionary of resulting genes from the HYPERTRIBE analysis for a certain threshold.
     # Return genes_by_comparison_type[comparison_type][gene]: Number of editing sites
@@ -151,7 +149,7 @@ if __name__ == '__main__':
         axis_lim = max(max(df['comparison_1']), max(df['comparison_2']))
         
         # Plot genes identified from the comparisons by the number of editing sites
-        fig, ax = plt.subplots(figsize=(5, 4),  nrows=1, ncols=1)
+        fig, ax = plt.subplots(figsize=(5, 4), nrows=1, ncols=1)
         ax = sns.scatterplot(data=df, x='comparison_1', y='comparison_2',
                              hue='presence', palette={'Both comparisons': 'green', 'Either comparison': 'orange'},
                              style='presence', markers={'Both comparisons': 'o', 'Either comparison': 'X'},
