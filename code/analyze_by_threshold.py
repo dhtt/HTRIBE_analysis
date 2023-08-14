@@ -5,6 +5,7 @@ This script analyzes the HYPERTRIBE summarized results for each threshold genera
 Usage: analyze_by_threshold.py HTRIBE_result_path threshold
 '''
 
+from helper_functions import read_bedgraph
 import seaborn as sns
 import os
 import pickle
@@ -16,26 +17,6 @@ from matplotlib_venn import venn3_circles, venn3
 from itertools import combinations
 from math import nan
 from helper_functions import create_new_folder
-
-def read_bedgraph(result_dir: str, threshold: str):
-    '''This function reads HYPERTRIBE result files in xls format and return a data frame of concatenated results
-
-    Args:
-        result_dir (str): absolute path to the HYPERTRIBE result folder
-        threshold (str): threshold of HYPERTRIBE analysis to be analyzed. This should be a string starting with _A2G.
-            For example, '_A2G_1%'
-    '''
-    all_files = os.listdir(result_dir)
-    df_list = []
-    for file in all_files:
-        if file.endswith(threshold + '.xls'):
-            comparison_type = '_'.join(file.split('_')[1:3])
-            df = pd.read_csv(os.path.join(result_dir, file),
-                             sep='\t', header=0, index_col=None)
-            df['comparison_type'] = comparison_type
-            df_list.append(df)
-    df_list_concat = pd.concat(df_list)
-    return(df_list_concat)
 
 
 def get_sorted_labels(ax_):
@@ -74,8 +55,7 @@ if __name__ == '__main__':
 
     # Gather a dictionary of resulting genes from the HYPERTRIBE analysis for a certain threshold.
     # Return genes_by_comparison_type[comparison_type][gene]: Number of editing sites
-    result_df = read_bedgraph(
-        result_dir=HTRIBE_result_path, threshold=threshold)
+    result_df = read_bedgraph(result_dir=HTRIBE_result_path, threshold=threshold, file_extension='.xls')
     genes_by_comparison_type = dict()
 
     for comparison_type in set(result_df['comparison_type']):
