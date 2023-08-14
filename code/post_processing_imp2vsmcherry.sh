@@ -35,7 +35,6 @@ do
     awk 'BEGIN { OFS="\t" } {$25=""; print $0}' $OUTDIR/HyperTRIBE_mcherry_imp2_A2G"$i".bedgraph.temp | sed "s/\t\t/\t/g" > $OUTDIR/HyperTRIBE_mcherry_imp2_A2G"$i".bedgraph 
 done
 
-
 declare -a type=("" "_1%" "_5%")
 for i in "${type[@]}"
 $INDIR='.'
@@ -43,6 +42,7 @@ $INDIR='.'
 do
     bedtools intersect -u -a ./HyperTRIBE_mcherry_imp2_A2G_5%.bedgraph -b ./HyperTRIBE_wt_imp2_A2G_5%.bedgraph > ./extra/mcherry_imp2_vs_wt_imp2_5%.bedgraph.temp
     bedtools intersect -u -a ./HyperTRIBE_mcherry_imp2_A2G_5%.bedgraph -b ./HyperTRIBE_wt_mcherry_A2G_5%.bedgraph > ./extra/mcherry_imp2_vs_wt_mcherry_5%.bedgraph.temp
+        for j in "${imp2[@]}"
     bedtools intersect -u -a ./HyperTRIBE_wt_mcherry_A2G.bedgraph -b ./HyperTRIBE_wt_imp2_A2G_1%.bedgraph > ./extra/wt_mcherry_vs_wt_imp2.bedgraph.temp
 
     awk 'BEGIN { OFS="\t" } {$25=""; print $0}' ./extra/mcherry_imp2_vs_wt_imp2_5%.bedgraph.temp | sed "s/\t\t/\t/g" > ./extra/mcherry_imp2_vs_wt_imp2_5%.bedgraph
@@ -78,7 +78,6 @@ do
     do
         # for j in "${wt[@]}"
         # for j in "${mcherry[@]}"
-        for j in "${imp2[@]}"
         do
             echo $i $j $t
             perl $HYPERTRIBE/summarize_results.pl IMP2_"$i"_"$j"_A2G"$t".bedgraph  > $OUTDIR/test_"$i"_"$j$t".xls
@@ -91,3 +90,10 @@ for ((sample=1;sample<10;sample+=1))
 do
     salmon quant -i /home/dhthutrang/TRIBE/refgen/index_salmon_ncbi -l A -1 /home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim/ctrl_DS"$sample"_R1.fastq -2 /home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim/ctrl_DS"$sample"_R2.fastq -o alignment_salmon_ncbi/ctrl_DS"$sample" &
 done 
+
+for file in *bedgraph.grouped
+do 
+    OUTFILE="${file%%.*}"
+    bedtools intersect -wb -a $file -b /home/dhthutrang/TRIBE/refgen/mm39.ncbiRefSeq.CDS_UTR.gtf > $OUTFILE.temp
+    bedtools groupby -i $OUTFILE.temp -g 1-5 -c 30 -o distinct > annotated/$OUTFILE.bed
+done
