@@ -17,7 +17,7 @@ from matplotlib_venn import venn3_circles, venn3
 from itertools import combinations
 from math import nan
 from helper_functions import create_new_folder
-
+from compare_replicates import compute_jaccard
 
 def get_sorted_labels(ax_):
     handlers, labels = ax.get_legend_handles_labels()
@@ -44,7 +44,9 @@ if __name__ == '__main__':
     # HTRIBE_result_path = sys.argv[1]
     # threshold = sys.argv[2]
 
-    HTRIBE_result_path = '/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/collapsed_replicates/comparisons/combined_result'
+    HTRIBE_result_path = '/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/diff_span/all_span/transcript/OR/OR/result'
+    threshold = ''
+    threshold = '1%'
     threshold = '5%'
     comparison_type = ['wt_mcherry', 'wt_imp2', 'mcherry_imp2']
     comparison_pair = list(combinations(comparison_type, 2))
@@ -80,6 +82,33 @@ if __name__ == '__main__':
     # and y is the number of editing site for gene in comparison 2)
     with open(analyzed_result_path.joinpath('genes_by_comparison_type_' + threshold + '.pickle'), 'rb') as file:
         genes_by_comparison_type = pickle.load(file)
+        
+    # Report Jaccard distance based on shared genes
+    with open(analyzed_result_path.joinpath('output.txt'), 'a') as outfile:
+        outfile.write('Threshold: ' + threshold + '\n')
+        
+    for pair in comparison_pair:
+        result = pair[0] + '_' + pair[1] + ": " + str(round(compute_jaccard(list(genes_by_comparison_type[pair[0]].keys()), list(genes_by_comparison_type[pair[1]].keys())), 2))
+        print(result)
+        with open(analyzed_result_path.joinpath('output.txt'), 'a') as outfile:
+            outfile.write(result + '\n')
+    
+    old_result_path = '/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/diff_span/all_span/old_result/'
+    old_result = read_bedgraph(result_dir=old_result_path, threshold=threshold, file_extension='_results.xls')
+    old_result_genes = list(old_result['Gene_name'])
+    gene_list = [gene for gene in list(genes_by_comparison_type['mcherry_imp2'].keys())]
+    
+    print(','.join(gene_list))
+    for comp_type in comparison_type:
+        gene_list = list(genes_by_comparison_type[comp_type].keys())
+        no_intersecting_genes = len(set(gene_list).intersection(set(old_result_genes)))
+        # result = str(round(no_intersecting_genes/(len(gene_list) + 1)*100, 2))
+        # print(comp_type + ': ' + str(no_intersecting_genes) + ' (' + result + ')')
+        result = str(round(compute_jaccard(set(gene_list), set(old_result_genes))*1000, 2))
+        print(comp_type + ': ' + result )
+        with open(analyzed_result_path.joinpath('output.txt'), 'a') as outfile:
+            outfile.write(comp_type + ': ' + result + '-' + str(no_intersecting_genes) + '\n')
+    
     coords_by_no_editing_sites = dict()
 
     # For each comparison (wild type vs. mCherry or IMP2 or mCherry vs. IMP2)

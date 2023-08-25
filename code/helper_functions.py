@@ -298,15 +298,17 @@ def read_bedgraph(result_dir: str, threshold: str, file_extension: str = '.xls',
             For example, '_A2G_1%'
     '''
     all_files = os.listdir(result_dir)
+    print(all_files)
     df_list = []
     for file in all_files:
         if file.endswith(threshold + file_extension):
-            comparison_type = '_'.join(file.split('_')[1:3])
+            comparison_type = '_'.join(file.split('_')[0:2])
             df = pd.read_csv(os.path.join(result_dir, file),
                              sep='\t', header=header, index_col=index)
             df['comparison_type'] = comparison_type
             df_list.append(df)
     df_list_concat = pd.concat(df_list)
+    print(df_list_concat)
     return(df_list_concat)
 
 
