@@ -19,9 +19,8 @@ if __name__=='__main__':
      # HTRIBE_result_path = sys.argv[1]
     # threshold = sys.argv[2]
 
-    HTRIBE_result_path = Path('/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/collapsed_replicates/comparisons/combined_result/')
-    HTRIBE_annot_result_path = HTRIBE_result_path.joinpath('annotated')
-    threshold = '5%'
+    HTRIBE_result_path = Path('/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/diff_span/all_span/CDS_UTR/OR/OR/')
+    threshold = '1%'
     comparison_type = ['wt_mcherry', 'wt_imp2', 'mcherry_imp2']
     comparison_pair = list(combinations(comparison_type, 2))
     
@@ -29,8 +28,8 @@ if __name__=='__main__':
     analyzed_result_path = Path(HTRIBE_result_path).joinpath('analyzed_result')
     create_new_folder(analyzed_result_path)
 
-    result_df = read_bedgraph(result_dir=HTRIBE_annot_result_path, threshold=threshold, file_extension='.bed', header=None)
-    result_df.columns = ['chr', 'start', 'end', 'perc', 'id', 'region', 'comparison_type']
+    result_df = read_bedgraph(result_dir=HTRIBE_result_path, threshold=threshold, file_extension='.bedgraph', header=None)
+    result_df.columns = ['chr', 'start', 'end', 'region', 'strand', 'number', 'comparison_type']
     result_df['region'] = result_df['region'].str.split(pat=',')
     result_df = result_df.explode('region')
     result_df_count = result_df.groupby(['comparison_type', 'region'], as_index=False).count().iloc[:, :3]

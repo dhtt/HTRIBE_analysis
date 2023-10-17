@@ -43,12 +43,15 @@ setwd('/home/dhthutrang/TRIBE/mRNA_seq/processed/alignment_salmon_ncbi/analyzed_
 # saveRDS(significant_results, file = "significant_results.RDS")
 
 dds <- readRDS("dds.RDS")
+
 dds_normed <- readRDS("dds_normed.RDS")
 dds_results <- readRDS("dds_results.RDS")
+significant_results <- readRDS("significant_results.RDS")
+print(significant_results)
 
-png("PCA_deseq2.png", width = 6, height = 6, unit = 'in')
-plotPCA(dds_rlog, intgroup="group", ntop=500) +
-  theme_bw() + # change theme
-  geom_point(size=5) + # add point size
-  ggtitle(label="Principal Component Analysis (PCA)", subtitle="Top 500 most variable genes")
-dev.off()
+# png("PCA_deseq2.png", width = 6, height = 6, unit = 'in')
+# plotPCA(dds_rlog, intgroup="group", ntop=500) +
+#   theme_bw() + # change theme
+#   geom_point(size=5) + # add point size
+#   ggtitle(label="Principal Component Analysis (PCA)", subtitle="Top 500 most variable genes")
+# dev.off()

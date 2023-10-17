@@ -44,155 +44,168 @@ if __name__ == '__main__':
     # HTRIBE_result_path = sys.argv[1]
     # threshold = sys.argv[2]
 
-    HTRIBE_result_path = '/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/diff_span/all_span/transcript/OR/OR/result'
-    threshold = ''
-    threshold = '1%'
-    threshold = '5%'
-    comparison_type = ['wt_mcherry', 'wt_imp2', 'mcherry_imp2']
-    comparison_pair = list(combinations(comparison_type, 2))
+    collapse_regions = ['site', 'window', 'CDS_UTR', 'transcript']
+    for region in collapse_regions:                                                                    
+        HTRIBE_result_path = '/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/diff_span/all_span/' + region + '/OR/OR/result'
+        # threshold = ''
+        threshold = '1%'
+        # threshold = '5%'
+        comparison_type = ['wt_mcherry', 'wt_imp2', 'mcherry_imp2']
+        comparison_pair = list(combinations(comparison_type, 2))
 
-    # Create a folder storing results
-    analyzed_result_path = Path(HTRIBE_result_path).joinpath('analyzed_result')
-    create_new_folder(analyzed_result_path)
+        # Create a folder storing results
+        analyzed_result_path = Path(HTRIBE_result_path).joinpath('analyzed_result')
+        create_new_folder(analyzed_result_path)
 
-    # Gather a dictionary of resulting genes from the HYPERTRIBE analysis for a certain threshold.
-    # Return genes_by_comparison_type[comparison_type][gene]: Number of editing sites
-    result_df = read_bedgraph(result_dir=HTRIBE_result_path, threshold=threshold, file_extension='.xls')
-    genes_by_comparison_type = dict()
+        # Gather a dictionary of resulting genes from the HYPERTRIBE analysis for a certain threshold.
+        # Return genes_by_comparison_type[comparison_type][gene]: Number of editing sites
+        result_df = read_bedgraph(result_dir=HTRIBE_result_path, threshold=threshold, file_extension='.xls')
+        genes_by_comparison_type = dict()
 
-    for comparison_type in set(result_df['comparison_type']):
-        no_editing_sites_by_gene = dict()
-        genes = set(result_df['Gene_name']
-                    [result_df['comparison_type'] == comparison_type])
-        for gene in genes:
-            no_editing_sites_by_gene[gene] = result_df['Num_edit_sites'][(result_df['Gene_name'] == gene) &
-                                                                         (result_df['comparison_type'] == comparison_type)].values[0]
-        genes_by_comparison_type[comparison_type] = no_editing_sites_by_gene
+        # for comparison_type in set(result_df['comparison_type']):
+        #     no_editing_sites_by_gene = dict()
+        #     genes = set(result_df['Gene_name']
+        #                 [result_df['comparison_type'] == comparison_type])
+        #     for gene in genes:
+        #         no_editing_sites_by_gene[gene] = result_df['Num_edit_sites'][(result_df['Gene_name'] == gene) &
+        #                                                                      (result_df['comparison_type'] == comparison_type)].values[0]
+        #     genes_by_comparison_type[comparison_type] = no_editing_sites_by_gene
 
-    with open(analyzed_result_path.joinpath('genes_by_comparison_type_' + threshold + '.pickle'), 'wb') as file:
-        pickle.dump(genes_by_comparison_type, file,
-                    protocol=pickle.HIGHEST_PROTOCOL)
+        # with open(analyzed_result_path.joinpath('genes_by_comparison_type_' + threshold + '.pickle'), 'wb') as file:
+        #     pickle.dump(genes_by_comparison_type, file,
+        #                 protocol=pickle.HIGHEST_PROTOCOL)
 
-    # Generate Venn diagram to compare the overlap between the detected genes for different comparisons
-    generate_venn_diagram(genes_by_comparison_type_=genes_by_comparison_type,
-                          analyzed_result_path_=analyzed_result_path, threshold_=threshold)
+        # # Generate Venn diagram to compare the overlap between the detected genes for different comparisons
+        # generate_venn_diagram(genes_by_comparison_type_=genes_by_comparison_type,
+        #                       analyzed_result_path_=analyzed_result_path, threshold_=threshold)
 
-    # Store number of editing sites identified for each gene from a pairwise comparison in coords_by_no_editing_sites
-    # Return coords_by_no_editing_sites[comparison_pair][gene]: (x, y) while x is the number of editing sites for gene in comparison 1
-    # and y is the number of editing site for gene in comparison 2)
-    with open(analyzed_result_path.joinpath('genes_by_comparison_type_' + threshold + '.pickle'), 'rb') as file:
-        genes_by_comparison_type = pickle.load(file)
+        # Store number of editing sites identified for each gene from a pairwise comparison in coords_by_no_editing_sites
+        # Return coords_by_no_editing_sites[comparison_pair][gene]: (x, y) while x is the number of editing sites for gene in comparison 1
+        # and y is the number of editing site for gene in comparison 2)
+        with open(analyzed_result_path.joinpath('genes_by_comparison_type_' + threshold + '.pickle'), 'rb') as file:
+            genes_by_comparison_type = pickle.load(file)
         
-    # Report Jaccard distance based on shared genes
-    with open(analyzed_result_path.joinpath('output.txt'), 'a') as outfile:
-        outfile.write('Threshold: ' + threshold + '\n')
+        # # Report sig genes
+        # with open(analyzed_result_path.joinpath('sig_genes' + region + '.txt'), 'a') as outfile:
+        #     outfile.write('Threshold: ' + threshold + '\n')
+            
+        # with open(analyzed_result_path.joinpath('sig_genes' + region + '.txt'), 'a') as outfile:
+        #     for comparison_pair, sig_genes in genes_by_comparison_type.items():
+        #         outfile.write("*" * 30 + '\n')
+        #         outfile.write(comparison_pair + '\n')
+        #         outfile.write('","'.join(list(sig_genes.keys())))
+            
         
-    for pair in comparison_pair:
-        result = pair[0] + '_' + pair[1] + ": " + str(round(compute_jaccard(list(genes_by_comparison_type[pair[0]].keys()), list(genes_by_comparison_type[pair[1]].keys())), 2))
-        print(result)
+        # Report Jaccard distance based on shared genes
         with open(analyzed_result_path.joinpath('output.txt'), 'a') as outfile:
-            outfile.write(result + '\n')
-    
-    old_result_path = '/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/diff_span/all_span/old_result/'
-    old_result = read_bedgraph(result_dir=old_result_path, threshold=threshold, file_extension='_results.xls')
-    old_result_genes = list(old_result['Gene_name'])
-    gene_list = [gene for gene in list(genes_by_comparison_type['mcherry_imp2'].keys())]
-    
-    print(','.join(gene_list))
-    for comp_type in comparison_type:
-        gene_list = list(genes_by_comparison_type[comp_type].keys())
-        no_intersecting_genes = len(set(gene_list).intersection(set(old_result_genes)))
-        # result = str(round(no_intersecting_genes/(len(gene_list) + 1)*100, 2))
-        # print(comp_type + ': ' + str(no_intersecting_genes) + ' (' + result + ')')
-        result = str(round(compute_jaccard(set(gene_list), set(old_result_genes))*1000, 2))
-        print(comp_type + ': ' + result )
-        with open(analyzed_result_path.joinpath('output.txt'), 'a') as outfile:
-            outfile.write(comp_type + ': ' + result + '-' + str(no_intersecting_genes) + '\n')
-    
-    coords_by_no_editing_sites = dict()
-
-    # For each comparison (wild type vs. mCherry or IMP2 or mCherry vs. IMP2)
-    for pair in comparison_pair:
-        comparison_1, comparison_2 = pair[0], pair[1]
-        mutual_genes = set(list(genes_by_comparison_type[comparison_1].keys(
-        )) + list(genes_by_comparison_type[comparison_2].keys()))
-        coords = dict()
-
-        # Store the number of editing sites from comparison 1 as x-coordinate and from 2 as y-coordinate
-        for gene in mutual_genes:
-            if gene in genes_by_comparison_type[comparison_1].keys():
-                x_coord = genes_by_comparison_type[comparison_1][gene]
-            else:
-                x_coord = nan
-
-            if gene in genes_by_comparison_type[comparison_2].keys():
-                y_coord = genes_by_comparison_type[comparison_2][gene]
-            else:
-                y_coord = nan
-            coords[gene] = (x_coord, y_coord)
-        coords_by_no_editing_sites[str(
-            comparison_1 + ':' + comparison_2)] = coords
-
-    with open(analyzed_result_path.joinpath('coords_by_no_editing_sites' + threshold + '.pickle'), 'wb') as file:
-        pickle.dump(coords_by_no_editing_sites, file,
-                    protocol=pickle.HIGHEST_PROTOCOL)
-
-    # Create a dataframe for scatter plot comparing the gene result identified from the comparisons
-    with open(analyzed_result_path.joinpath('coords_by_no_editing_sites' + threshold + '.pickle'), 'rb') as file:
-        coords_by_no_editing_sites = pickle.load(file)
-    comparison_pair = list(coords_by_no_editing_sites.keys())
-    all_comparisons = []
-    for pair in comparison_pair:
-        comparison_1 = pair.split(':')
-        comparison_2 = comparison_1[1]
-        comparison_1 = comparison_1[0]
-
-        df = pd.DataFrame.from_dict(
-            coords_by_no_editing_sites[pair]).transpose()
-        df.columns = ['comparison_1', 'comparison_2']
-        df['presence'] = 'Both comparisons'
-        df['presence'][df[['comparison_1', 'comparison_2']].isnull().any(1)] = 'Either comparison'
-        df = df.fillna(0)
-        df['comparison_type'] = comparison_1 + '_' + comparison_2
-        df['gene_name'] = df.index
-        axis_lim = max(max(df['comparison_1']), max(df['comparison_2']))
+            outfile.write('Threshold: ' + threshold + '\n')
+            
+        for pair in comparison_pair:
+            result = pair[0] + '_' + pair[1] + ": " + str(round(compute_jaccard(list(genes_by_comparison_type[pair[0]].keys()), list(genes_by_comparison_type[pair[1]].keys())), 2))
+            print(result)
+            with open(analyzed_result_path.joinpath('output.txt'), 'a') as outfile:
+                outfile.write(result + '\n')
         
-        # Plot genes identified from the comparisons by the number of editing sites
-        fig, ax = plt.subplots(figsize=(5, 4), nrows=1, ncols=1)
-        ax = sns.scatterplot(data=df, x='comparison_1', y='comparison_2',
-                             hue='presence', palette={'Both comparisons': 'green', 'Either comparison': 'orange'},
-                             style='presence', markers={'Both comparisons': 'o', 'Either comparison': 'X'},
-                             linewidth=0, alpha=0.4)
+        old_result_path = '/home/dhthutrang/TRIBE/mRNA_seq/processed/extract.trim.align.dedup/test1/result/diff_span/all_span/old_result/'
+        old_result = read_bedgraph(result_dir=old_result_path, threshold=threshold, file_extension='_results.xls')
+        old_result_genes = list(old_result['Gene_name'])
+        gene_list = [gene for gene in list(genes_by_comparison_type['mcherry_imp2'].keys())]
+        
+        print(','.join(gene_list))
+        for comp_type in comparison_type:
+            gene_list = list(genes_by_comparison_type[comp_type].keys())
+            no_intersecting_genes = len(set(gene_list).intersection(set(old_result_genes)))
+            # result = str(round(no_intersecting_genes/(len(gene_list) + 1)*100, 2))
+            # print(comp_type + ': ' + str(no_intersecting_genes) + ' (' + result + ')')
+            result = str(round(compute_jaccard(set(gene_list), set(old_result_genes))*1000, 2))
+            print(comp_type + ': ' + result )
+            with open(analyzed_result_path.joinpath('output.txt'), 'a') as outfile:
+                outfile.write(comp_type + ': ' + result + '-' + str(no_intersecting_genes) + '\n')
+        
+        coords_by_no_editing_sites = dict()
+
+        # For each comparison (wild type vs. mCherry or IMP2 or mCherry vs. IMP2)
+        for pair in comparison_pair:
+            comparison_1, comparison_2 = pair[0], pair[1]
+            mutual_genes = set(list(genes_by_comparison_type[comparison_1].keys(
+            )) + list(genes_by_comparison_type[comparison_2].keys()))
+            coords = dict()
+
+            # Store the number of editing sites from comparison 1 as x-coordinate and from 2 as y-coordinate
+            for gene in mutual_genes:
+                if gene in genes_by_comparison_type[comparison_1].keys():
+                    x_coord = genes_by_comparison_type[comparison_1][gene]
+                else:
+                    x_coord = nan
+
+                if gene in genes_by_comparison_type[comparison_2].keys():
+                    y_coord = genes_by_comparison_type[comparison_2][gene]
+                else:
+                    y_coord = nan
+                coords[gene] = (x_coord, y_coord)
+            coords_by_no_editing_sites[str(
+                comparison_1 + ':' + comparison_2)] = coords
+
+        with open(analyzed_result_path.joinpath('coords_by_no_editing_sites' + threshold + '.pickle'), 'wb') as file:
+            pickle.dump(coords_by_no_editing_sites, file,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+        # Create a dataframe for scatter plot comparing the gene result identified from the comparisons
+        with open(analyzed_result_path.joinpath('coords_by_no_editing_sites' + threshold + '.pickle'), 'rb') as file:
+            coords_by_no_editing_sites = pickle.load(file)
+        comparison_pair = list(coords_by_no_editing_sites.keys())
+        all_comparisons = []
+        for pair in comparison_pair:
+            comparison_1 = pair.split(':')
+            comparison_2 = comparison_1[1]
+            comparison_1 = comparison_1[0]
+
+            df = pd.DataFrame.from_dict(
+                coords_by_no_editing_sites[pair]).transpose()
+            df.columns = ['comparison_1', 'comparison_2']
+            df['presence'] = 'Both comparisons'
+            df['presence'][df[['comparison_1', 'comparison_2']].isnull().any(1)] = 'Either comparison'
+            df = df.fillna(0)
+            df['comparison_type'] = comparison_1 + '_' + comparison_2
+            df['gene_name'] = df.index
+            axis_lim = max(max(df['comparison_1']), max(df['comparison_2']))
+            
+            # Plot genes identified from the comparisons by the number of editing sites
+            fig, ax = plt.subplots(figsize=(5, 4), nrows=1, ncols=1)
+            ax = sns.scatterplot(data=df, x='comparison_1', y='comparison_2',
+                                 hue='presence', palette={'Both comparisons': 'green', 'Either comparison': 'orange'},
+                                 style='presence', markers={'Both comparisons': 'o', 'Either comparison': 'X'},
+                                 linewidth=0, alpha=0.4)
+            ax.plot([0, axis_lim], [0, axis_lim], 'red', linestyle='dashed', alpha = 0.6)
+
+            ax.set(title='Genes with A2G identified from the\npairwise comparisons (T = ' + threshold + ')',
+                   xlabel=comparison_1, ylabel=comparison_2)
+
+            handlers_dict = get_sorted_labels(ax)
+            plt.legend(handlers_dict.values(), handlers_dict.keys(),
+                       title='Genes with A2G sites\nidentified in:')
+            fig.savefig(analyzed_result_path.joinpath(
+                'scatterplot_' + comparison_1 + ':' + comparison_2 + '_' + threshold + '.png'))
+            plt.close(fig)
+
+            # Store the dataframe for this comparison pair to make a combined plot
+            all_comparisons.append(df)
+
+        # Combined scatter plot from all type of pair comparisons at once
+        all_comparisons_df = pd.concat(all_comparisons)
+        special_genes = all_comparisons_df[(all_comparisons_df['presence'] == 'Both comparisons') & (all_comparisons_df['comparison_type'] == 'wt_imp2_mcherry_imp2')]
+        special_genes = special_genes.sort_values(by=['comparison_1', 'comparison_2'])
+        print(special_genes.tail(10))
+        
+        axis_lim = max(max(all_comparisons_df['comparison_1']), max(all_comparisons_df['comparison_2']))
+        fig, ax = plt.subplots(figsize=(5, 4),  nrows=1, ncols=1)
+        ax = sns.scatterplot(data=all_comparisons_df, x='comparison_1', y='comparison_2',
+                             hue='comparison_type', alpha=0.4, linewidth=0.5)
         ax.plot([0, axis_lim], [0, axis_lim], 'red', linestyle='dashed', alpha = 0.6)
-
         ax.set(title='Genes with A2G identified from the\npairwise comparisons (T = ' + threshold + ')',
-               xlabel=comparison_1, ylabel=comparison_2)
-
-        handlers_dict = get_sorted_labels(ax)
-        plt.legend(handlers_dict.values(), handlers_dict.keys(),
-                   title='Genes with A2G sites\nidentified in:')
+               xlabel='Comparison 1', ylabel='Comparison 2')
+        plt.legend(title='Comparison type',
+                   labels=['_', 'WT_mCherry vs. WT_IMP2', 'WT_mCherry vs. mCherry_IMP2', 'WT_IMP2 vs. WT_mCherry'])
         fig.savefig(analyzed_result_path.joinpath(
-            'scatterplot_' + comparison_1 + ':' + comparison_2 + '_' + threshold + '.png'))
+            'scatterplot_' + threshold + '.png'))
         plt.close(fig)
-
-        # Store the dataframe for this comparison pair to make a combined plot
-        all_comparisons.append(df)
-
-    # Combined scatter plot from all type of pair comparisons at once
-    all_comparisons_df = pd.concat(all_comparisons)
-    special_genes = all_comparisons_df[(all_comparisons_df['presence'] == 'Both comparisons') & (all_comparisons_df['comparison_type'] == 'wt_imp2_mcherry_imp2')]
-    special_genes = special_genes.sort_values(by=['comparison_1', 'comparison_2'])
-    print(special_genes.tail(10))
-    
-    axis_lim = max(max(all_comparisons_df['comparison_1']), max(all_comparisons_df['comparison_2']))
-    fig, ax = plt.subplots(figsize=(5, 4),  nrows=1, ncols=1)
-    ax = sns.scatterplot(data=all_comparisons_df, x='comparison_1', y='comparison_2',
-                         hue='comparison_type', alpha=0.4, linewidth=0.5)
-    ax.plot([0, axis_lim], [0, axis_lim], 'red', linestyle='dashed', alpha = 0.6)
-    ax.set(title='Genes with A2G identified from the\npairwise comparisons (T = ' + threshold + ')',
-           xlabel='Comparison 1', ylabel='Comparison 2')
-    plt.legend(title='Comparison type',
-               labels=['_', 'WT_mCherry vs. WT_IMP2', 'WT_mCherry vs. mCherry_IMP2', 'WT_IMP2 vs. WT_mCherry'])
-    fig.savefig(analyzed_result_path.joinpath(
-        'scatterplot_' + threshold + '.png'))
-    plt.close(fig)
