@@ -12,22 +12,32 @@ library(Orthology.eg.db)
 library(ggpubr) 
 setwd("~/Documents/BIOINFO/TRIBE/HTRIBE_analysis/code")
 
+
+
+all_datasets = data.frame(dataset = c('GSE57957', 'GSE25097', 'GSE14520', 'GSE54236'),
+                          gene_symbol = c('Symbol', 'GeneSymbol', 'Gene Symbol', 'GENE_SYMBOL'),
+                          conds = c('T$:N$', 'tumor:healthy|non_tumor', 'A$:B$', 'tumor:non-malignant')
+                          )
+phenotypes = c('Tumor', 'Normal')
+cor_method = "spearman"
+comparisons <- c('wt_imp2', 'mcherry_imp2', 'wt_mcherry')
+comparison_names <- c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry')
 #==== Prepare expression data ====
-dataset_id = "GSE57957"
+dataset_id = "GSE25097"
 dataset_no = 1
 dataset <- getGEO(dataset_id)
 count_df <- exprs(dataset[[dataset_no]])
-head(count_df)
 
-
+# head( dataset[[dataset_no]]@featureData@GENE_SYMBOL)
 sample_ids <- dataset[[dataset_no]]$source_name_ch1
 organism <- dataset[[dataset_no]]$taxid_ch1
-gene_ids <- dataset[[dataset_no]]@featureData@data$Symbol #GSE57957
-# gene_ids <- dataset[[dataset_no]]@featureData@data$GeneSymbol #GSE25097
-# gene_ids <- dataset[[dataset_no]]@featureData@data$`Gene Symbol` #GSE14520
+
+# Define gene_synonyms list
+gene_ids <- unlist(dataset[[dataset_no]]@featureData@data[all_datasets$gene_symbol[all_datasets$dataset == dataset_id]], use.names = F)
 gene_ids[nchar(gene_ids)==max(nchar(gene_ids))]
 
-if (dataset_id == 'GSE57957'){ #GSE57957
+# Define gene_synonyms list
+if (dataset_id == 'GSE57957'){
     gene_alias = mclapply(gene_ids, function(x){
         all_alias = alias2Symbol(x, species = 'Hs')
         all_alias = all_alias[!all_alias %in% x]
@@ -37,10 +47,10 @@ if (dataset_id == 'GSE57957'){ #GSE57957
     gene_synonyms <- dataset[[dataset_no]]@featureData@data$Synonyms
     gene_synonyms <- lapply(gene_synonyms, function(x) paste(paste(strsplit(x, '; ')[[1]], collapse='_'), '_', sep=''))
     gene_synonyms <- paste(gene_alias, gene_synonyms, sep='')
-} else if(dataset_id == "GSE25097"){
+} else if(dataset_id == "GSE25097" | dataset_id == 'GSE54236'){
     gene_synonyms <- mclapply(unique(gene_ids), function(x){
         all_alias = alias2Symbol(x, species = 'Hs')
-        all_alias = all_alias[!all_alias %in% syms]
+        all_alias = all_alias[!all_alias %in% x]
         all_alias = paste('_', paste(all_alias, collapse='_'), '_', sep='')
         return(all_alias)
     })
@@ -55,31 +65,9 @@ if (dataset_id == 'GSE57957'){ #GSE57957
         return(paste('_', paste(syms, collapse='_'), '_', all_alias, '_', sep=''))
     })
 }
-gene_synonyms[nchar(gene_synonyms)==max(nchar(gene_synonyms))]
 
-rownames(count_df) <- gene_ids
-if (dataset_id == "GSE57957"){
-    colnames(count_df) <- sample_ids
-} else {
-    colnames(count_df) <- paste(colnames(count_df), sample_ids, sep='_')
-}
-
-if (dataset_id == "GSE57957"){
-    tumor = seq(1, ncol(count_df), 2)
-    normal = seq(2, ncol(count_df), 2)
-} else if (dataset_id == "GSE25097"){
-    tumor = colnames(count_df)[grep('tumor', colnames(count_df), fixed=F)]
-    tumor = tumor[grep('non', tumor, invert = T)]
-    normal = colnames(count_df)[grep('healthy|non_tumor', colnames(count_df), fixed=F)]
-} else if (dataset_id == "GSE14520"){
-    tumor = colnames(count_df)[grep('A$', colnames(count_df), fixed=F)]
-    normal = colnames(count_df)[grep('B$', colnames(count_df), fixed=F)]
-}
-phenotypes = c('Tumor', 'Normal')
 
 #==== STEP 1: Prepare HTRIBE list ====
-comparisons <- c('wt_imp2', 'mcherry_imp2', 'wt_mcherry')
-
 step_1_result_list = list()
 for (i in 1:length(comparisons)){
     comparison = comparisons[i]
@@ -96,7 +84,7 @@ for (i in 1:length(comparisons)){
     human_mouse_map_ENTREZ <- select(Orthology.eg.db, exception_genes_ENTREZ, "Homo_sapiens","Mus_musculus")
     temp <- AnnotationDbi::select(org.Hs.eg.db, keys=sapply(human_mouse_map_ENTREZ$Homo_sapiens, toString), columns=c("ENTREZID", "SYMBOL"), keytype="ENTREZID", multiVals="first")
     human_mouse_map_ENTREZ$human_homolog <-  temp$SYMBOL
-    human_mouse_map_ENTREZ$mouse <-  rownames(human_mouse_map_ENTREZ)
+    human_mouse_map_ENTREZ$mouse <- rownames(human_mouse_map_ENTREZ)
     
     human_mouse_map_homolog = human_mouse_map %>% left_join(human_mouse_map_ENTREZ[, c('mouse', 'human_homolog')])
     human_mouse_map_homolog$human = if_else(is.na(human_mouse_map_homolog$human), human_mouse_map_homolog$human_homolog, human_mouse_map_homolog$human)
@@ -105,18 +93,46 @@ for (i in 1:length(comparisons)){
     print(paste("Dim human_mouse_map_homolog AFTER filter:", dim(human_mouse_map_homolog)))
     
     human_mouse_map_homolog_subset = human_mouse_map_homolog[human_mouse_map_homolog$mouse %in% HTRIBE_list_all, ]
-    count_df_subset = count_df[rownames(count_df) %in% human_mouse_map_homolog_subset$human, ]
-    step_1_result_list[[i]] = list(human_mouse_map_homolog_subset, count_df_subset)
+    # Define sample names and tag tumor/normal tissues
+    count_df_modified = count_df
+    rownames(count_df_modified) <- gene_ids
+    conds = strsplit(all_datasets$conds[all_datasets$dataset == dataset_id], ':')[[1]]
+    
+    if (dataset_id == "GSE57957" ){
+        colnames(count_df_modified) <- sample_ids
+    } else if (dataset_id == 'GSE54236'){
+        patient_id = sapply(dataset[[dataset_no]]$title, function(x) strsplit(x, '_')[[1]][2]) 
+        colnames(count_df_modified) = paste(patient_id, colnames(count_df_modified), sample_ids, sep='_')
+        paired_samples = names(table(patient_id))[table(patient_id) == 2]
+        patient_id_paired = patient_id %in% paired_samples
+        count_df_modified = count_df_modified[, patient_id_paired == TRUE]
+    } else {
+        colnames(count_df_modified) <- paste(colnames(count_df), sample_ids, sep='_')
+    }
+    
+    tumor = colnames(count_df_modified)[grep(conds[1], colnames(count_df_modified), fixed=F)]
+    normal = colnames(count_df_modified)[grep(conds[2], colnames(count_df_modified), fixed=F)]
+    
+    if (dataset_id == "GSE25097") tumor = tumor[grep('non', tumor, invert = T)]
+    
+    
+    step_1_result_list[[i]] = list(human_mouse_map_homolog_subset, count_df_modified, gene_synonyms, tumor, normal)
+    names(step_1_result_list[[i]]) = c('human_mouse_map_homolog_subset', 'count_df', 'gene_synonyms', 'tumor', 'normal') 
 }
-saveRDS(step_1_result_list, file = paste("../analyzed_result/expression_correlation/step_1_result_list_", dataset_id, '_', dataset_no, '.RDS', sep=''))
-names(step_1_result_list) = c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry')
-head(step_1_result_list[[2]])
+names(step_1_result_list) = comparison_names
+saveRDS(step_1_result_list, file = paste('../analyzed_result/expression_correlation/', cor_method, '/step_1_result_list_', dataset_id, '_', dataset_no, '.RDS', sep=''))
+step_1_result_list = readRDS(paste('../analyzed_result/expression_correlation/', cor_method, '/step_1_result_list_', dataset_id, '_', dataset_no, '.RDS', sep=''))
+length(step_1_result_list$`WT vs. IMP2`$tumor)
+length(step_1_result_list$`WT vs. IMP2`$normal)
 
-# Separate IMP2 and other genes to compare
+#==== STEP 2: CORRELATION WITH IMP2 ====
 step_2_result_list = list()
 for (i in 1:length(comparisons)){
-    human_mouse_map_homolog_subset = step_1_result_list[[i]][[1]]
-    count_df_subset = step_1_result_list[[i]][[2]]
+    human_mouse_map_homolog_subset = step_1_result_list[[i]]$human_mouse_map_homolog_subset
+    count_df_modified = step_1_result_list[[i]]$count_df
+    gene_synonyms = step_1_result_list[[i]]$gene_synonyms
+    tumor = step_1_result_list[[i]]$tumor
+    normal = step_1_result_list[[i]]$normal
     
     r_values_df = list() 
     for (j in 1:length(phenotypes)){
@@ -126,11 +142,14 @@ for (i in 1:length(comparisons)){
         else
         {sample_ids = normal}
         
-        count_df_IMP2 = count_df[grep('^IGF2BP2$|^IMP2$', rownames(count_df), fixed = F), sample_ids]
-        count_df_others = count_df[grep('^IGF2BP2$|^IMP2$', rownames(count_df), fixed = F, invert = T), sample_ids]
+        count_df_IMP2 = count_df_modified[grep('^IGF2BP2$|^IMP2$', rownames(count_df_modified), fixed = F), sample_ids]
+        if (dataset_id == "GSE54236"){
+            count_df_IMP2 = count_df_IMP2[1, ]
+        }
+        count_df_others = count_df_modified[grep('^IGF2BP2$|^IMP2$', rownames(count_df_modified), fixed = F, invert = T), sample_ids]
         
         r_values = apply(count_df_others, 1, function(x){
-            return(cor(x, count_df_IMP2))
+            return(cor.test(x, count_df_IMP2, method = cor_method)$estimate)
         })
         names(r_values) = make.names(rownames(count_df_others), unique=T)
         r_values = reshape2::melt(r_values, value.name = 'R-value', variable.name=rownames(r_values))
@@ -162,9 +181,7 @@ for (i in 1:length(comparisons)){
     step_2_result_list[[i]] = r_values_df_melt
 }
 names(step_2_result_list) = names(step_1_result_list)
-saveRDS(step_2_result_list, file = paste("../analyzed_result/expression_correlation/step_2_result_list_", dataset_id, '_', dataset_no, '.RDS', sep=''))
-
-
+saveRDS(step_2_result_list, file = paste("../analyzed_result/expression_correlation/", cor_method,"/step_2_result_list_", dataset_id, '_', dataset_no, '.RDS', sep=''))
 
 plot_ecdf <- function(result_list, plot_title){
     ecdf <- ggplot(result_list, aes(`R-value`, colour=type, linetype=phenotype)) + 
@@ -191,7 +208,7 @@ for (i in 1:length(step_2_result_list)){
     ecdf_list[[i]] = plot_ecdf(step_2_result_list[[i]], names(step_2_result_list)[i])
 }
 
-png(paste("../analyzed_result/expression_correlation/ECDF_expression_", dataset_id, '_', dataset_no, '.png', sep=''), width = 12, height = 4, unit = 'in', res = 200)
+png(paste("../analyzed_result/expression_correlation/", cor_method,"/ECDF_expression_", dataset_id, '_', dataset_no, '.png', sep=''), width = 12, height = 4, unit = 'in', res = 200)
 ggarrange(plotlist = ecdf_list, ncol=3, nrow=1, common.legend = TRUE)
 dev.off()
 
