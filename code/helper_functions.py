@@ -1,3 +1,4 @@
+#conda env python3.11
 import os
 import pandas as pd
 import numpy as np
@@ -54,7 +55,7 @@ def bedtools_slop(bed_file, reference_genome, window_length, output_dir=None, ex
     rename_file(output_name, output_name.removesuffix('.slop'))
     
 
-def bedtools_sort(bed_file, output_dir=None, extra_sort_args=None):
+def bedtools_sort(bed_file, output_dir=None, extra_sort_args=None, keep_name=True):
     """Sort and clean bed file
 
     Args:
@@ -72,7 +73,8 @@ def bedtools_sort(bed_file, output_dir=None, extra_sort_args=None):
     command =  "sort -k1,1 -k2,2n -k3,3n %s %s > %s" % (extra_sort_args, bed_file, output_name)
     print(command)
     subprocess.call(command, shell=True)
-    rename_file(output_name, output_name.removesuffix('.sorted'))
+    if keep_name:
+        rename_file(output_name, output_name.removesuffix('.sorted'))
 
 
 # def bedtools_merge(bed_file, grouped_columns, group_mode): #
@@ -91,7 +93,7 @@ def bedtools_sort(bed_file, output_dir=None, extra_sort_args=None):
 #     rename_file(bed_file + '.grouped', bed_file)
 
 
-def bedtools_groupby(bed_file, group_by, retained_columns, group_mode):
+def bedtools_groupby(bed_file, group_by, retained_columns, group_mode, keep_name=True):
     """This method calls bedtools groupby
 
     Args:
@@ -121,7 +123,8 @@ def bedtools_groupby(bed_file, group_by, retained_columns, group_mode):
         bed_file, grouped_cols, retained_cols, grouping_mode, bed_file + '.grouped')
     print(command)
     subprocess.call(command, shell=True)
-    rename_file(bed_file + '.grouped', bed_file)
+    if keep_name:
+        rename_file(bed_file + '.grouped', bed_file)
 
 
 def bedtools_merge(bed_file, grouped_columns, group_mode):

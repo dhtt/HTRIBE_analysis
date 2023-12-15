@@ -1,2 +1,8 @@
 code/HyperTRIBE/annotations/refFlat.txt
 code/__pycache__/*
+1%_bed_motif/*
+1%_bed.tar
+*.fa*
+refgen/mm39.ncbiRefSeq.CDS_UTR.gtf
+refgen/meme_out/meme.txt
+wget-log
