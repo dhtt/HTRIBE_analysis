@@ -12,8 +12,6 @@ library(Orthology.eg.db)
 library(ggpubr) 
 setwd("~/Documents/BIOINFO/TRIBE/HTRIBE_analysis/code")
 
-
-
 all_datasets = data.frame(dataset = c('GSE57957', 'GSE25097', 'GSE14520', 'GSE54236'),
                           gene_symbol = c('Symbol', 'GeneSymbol', 'Gene Symbol', 'GENE_SYMBOL'),
                           conds = c('T$:N$', 'tumor:healthy|non_tumor', 'A$:B$', 'tumor:non-malignant')
@@ -22,7 +20,8 @@ phenotypes = c('Tumor', 'Normal')
 cor_method = "spearman"
 comparisons <- c('wt_imp2', 'mcherry_imp2', 'wt_mcherry')
 comparison_names <- c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry')
-#==== Prepare expression data ====
+
+#==== STEP 0: Prepare expression data ====
 dataset_id = "GSE25097"
 dataset_no = 1
 dataset <- getGEO(dataset_id)
@@ -67,9 +66,10 @@ if (dataset_id == 'GSE57957'){
 }
 
 
-#==== STEP 1: Prepare HTRIBE list ====
+#==== STEP 1: PREPARE HTRIBE LIST ====
 step_1_result_list = list()
 for (i in 1:length(comparisons)){
+    
     comparison = comparisons[i]
     HTRIBE_list <- fread(paste("../HYPERTRIBE_result_CDS_UTR/", comparison, "_A2G_1%.xls", sep=''))
     HTRIBE_list_all = HTRIBE_list$Gene_name
