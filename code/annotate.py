@@ -1,9 +1,7 @@
 from helper_functions import read_bedgraph, create_new_folder
 from pathlib import Path
-import pandas as pd
-from sklearn.decomposition import PCA
+import sys
 import plotly.express as px
-import plotly.graph_objects as go 
 from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
 from itertools import combinations
