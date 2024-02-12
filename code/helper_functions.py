@@ -219,6 +219,7 @@ def find_dup_regions(bedgraphs, output_dir, output_name, collapse_mode, span_typ
         output_dir (str): where output should be saved to
         output_name (str): name of the resulting bedgraph
         collapse_mode (str): 'AND' or 'OR'
+        span_type (str): type of span ('window' or 'site')
         multiinter_extra_args (str, optional): extra arguments for bedtools multiinter. Defaults to ''.
         intersect_extra_args (str, optional): extra arguments for bedtools intersect. Defaults to ''.
     """

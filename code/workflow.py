@@ -5,7 +5,7 @@ import argparse
 
 import preprocess 
 
-def get_config_section(config_ : configparser.RawConfigParser()):
+def get_config_section(config_):
     if not hasattr(get_config_section, 'section_dict'):
         get_config_section.section_dict = collections.defaultdict()
         
