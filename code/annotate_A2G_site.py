@@ -5,18 +5,13 @@ The script utilizes helper functions from the 'helper_functions' module.
 """
 
 from collections import defaultdict
-import subprocess
 import argparse
 import configparser
 import os
 from pathlib import Path
 from helper_functions import *
 
-def main():
-    """
-    The main function of the script.
-    It parses the command-line arguments, reads the configuration file, and performs the A2G site annotation.
-    """
+def annotate_A2G_site():
     # Create an ArgumentParser instance
     parser = argparse.ArgumentParser(description='Call bedtools intersect with a reference path')
     parser.add_argument('config_file', type=str)
@@ -120,4 +115,4 @@ def main():
 
 
 if __name__=='__main__':
-    main()
+    annotate_A2G_site()

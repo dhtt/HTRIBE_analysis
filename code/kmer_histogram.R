@@ -87,16 +87,11 @@ count_df = count_df[count_df$kmer %in% kmers, ]
 exp_group = experiments[1:3]
 control_group = experiments[3]
 control_group = experiments[3:4]
-temp = count_df %>%
-    group_by(kmer, experiment) %>%
-    mutate(count = as.numeric(count)) %>%
-    summarise(sum = sum(count))
-
-
 motives = c('AGACT', head(unique(count_df$motif), 100))
 res = list()
 res_1 = list()
 res_2 = list()
+
 for (i in 1:length(exp_group)){
     for (j in 1:length(control_group)){
         exp_id = exp_group[i]

@@ -2,7 +2,6 @@ import os
 import collections
 import configparser
 import argparse
-
 import preprocess 
 
 def get_config_section(config_):
@@ -21,13 +20,27 @@ def parse_args(args=None):
         "-cfg", 
         "--config_path", 
         type=str,
-        default="/home/dhthutrang/TRIBE/mRNA_seq/HTRIBE.cfg",
+        default="~/HTRIBE_analysis/configs/HTRIBE.cfg",
         help="Path to experiment config file."
     )
     return parser.parse_args(args)
 
 
 def run_preprocessing():
+    """
+    Runs the preprocessing workflow.
+
+    Args:
+        input_path (str): Path to the input file.
+        read1_extension (str): Extension of the first read file.
+        read2_extension (str): Extension of the second read file.
+        genome_dir (str): Path to the genome directory.
+        barcode (str): Barcode sequence.
+        extra_umi_extract_options (str): Extra options for UMI extraction.
+        extra_trimming_options (str): Extra options for read trimming.
+        extra_alignment_options (str): Extra options for read alignment.
+        extra_umi_dedup_options (str): Extra options for UMI deduplication.
+    """
     preprocess.execute_workflow(args = [
         '--input_path', input_path,
         '--read1_extension', read1_extension, 

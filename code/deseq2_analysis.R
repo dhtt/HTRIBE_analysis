@@ -16,15 +16,12 @@ library(clusterProfiler)
 library(viridis)
 library(ggplot2)
 library(ggpubr)
-library("VennDiagram")
+library(VennDiagram)
 
-diverging_pallete = colorRampPalette(rev(c("#1a9850", "#a6d96a", "#ffffe4", "#F1C1C1", "#D61818")))(99)
 diverging_pallete = c(colorRampPalette(c("#EA6B66", "#EA6B66", "#F1C1C1", "#ffffe4"))(50), 'white', colorRampPalette(c("#ffffe4", "#a6d96a", "#1a9850"))(50))
 
 # Set the working directory
-setwd('/home/dhthutrang/TRIBE/mRNA_seq/processed/alignment_salmon_ncbi/analyzed_result')
-setwd('~/Documents/BIOINFO/TRIBE/HTRIBE_analysis/analyzed_result/DEGs')
-
+setwd('~/TRIBE/mRNA_seq/processed/alignment_salmon_ncbi/analyzed_result')
 
 ################ DESEQ2 ANALYSIS ################ 
 # Read count data
@@ -146,7 +143,7 @@ dev.off()
 names(sig_gene_list) = names(res_list)
 
 #### Map transcript IDs of DEGs to gene IDs using reference genome file ####
-refgen = import.gff("/Users/trangdo/Documents/BIOINFO/TRIBE/HTRIBE_analysis/refgen/refGene.gtf")
+refgen = import.gff("~/TRIBE/HTRIBE_analysis/refgen/refGene.gtf")
 transcript_table = refgen %>%
     as.data.frame() %>%
     dplyr::select(transcript_id, gene_id) %>%

@@ -6,7 +6,6 @@ It then performs PCA analysis on the expression data and generates 2D and 3D sca
 The total explained variance is calculated and displayed in the plots.
 
 The script also performs correlation analysis on the expression data and generates a heatmap.
-Both Pearson and Spearman correlation coefficients are calculated and displayed in the heatmap.
 
 The generated plots and heatmap are saved as image files.
 

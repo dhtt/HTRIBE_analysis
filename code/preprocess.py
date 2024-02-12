@@ -9,6 +9,15 @@ import json
 from collections import defaultdict
 
 def parse_args(args=None):
+    """
+    Parse command line arguments.
+
+    Args:
+        args (list): List of command line arguments.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-p", 
@@ -65,12 +74,32 @@ def parse_args(args=None):
 
 
 def execute_generic_function(script_):
+    """
+    Execute a generic function.
+
+    Args:
+        script_ (str): The script to execute.
+    """
     print(script_)
     # subprocess.call(script_, shell=True)
 
 
 def generate_command_lines(sample_id, input_path, output_path, read1_extension, read2_extension, analysis_step, **kwargs):
-    
+    """
+    Generate command lines for each sample.
+
+    Args:
+        sample_id (str): The sample ID.
+        input_path (pathlib.Path): The input path.
+        output_path (pathlib.Path): The output path.
+        read1_extension (str): The file extension for read 1.
+        read2_extension (str): The file extension for read 2.
+        analysis_step (str): The analysis step.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        str: The generated command line.
+    """
     forward_read = sample_id + read1_extension
     reverse_read = sample_id + read2_extension
     script = "undefined"
@@ -161,6 +190,15 @@ def generate_command_lines(sample_id, input_path, output_path, read1_extension, 
 
 
 def execute_workflow(args=None):
+    """
+    Execute the workflow.
+
+    Args:
+        args (list): List of command line arguments.
+
+    Returns:
+        int: The exit code.
+    """
     args = parse_args(args)
     print(args)
     

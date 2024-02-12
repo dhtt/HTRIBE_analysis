@@ -21,7 +21,7 @@ cor_method = "spearman"
 comparisons <- c('wt_imp2', 'mcherry_imp2', 'wt_mcherry')
 comparison_names <- c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry')
 
-#==== STEP 0: Prepare expression data ====
+#### STEP 0: Prepare expression data ####
 dataset_id = "GSE25097"
 dataset_no = 1
 dataset <- getGEO(dataset_id)
@@ -66,7 +66,7 @@ if (dataset_id == 'GSE57957'){
 }
 
 
-#==== STEP 1: PREPARE HTRIBE LIST ====
+#### STEP 1: PREPARE HTRIBE LIST ####
 step_1_result_list = list()
 for (i in 1:length(comparisons)){
     
@@ -125,7 +125,7 @@ step_1_result_list = readRDS(paste('../analyzed_result/expression_correlation/',
 length(step_1_result_list$`WT vs. IMP2`$tumor)
 length(step_1_result_list$`WT vs. IMP2`$normal)
 
-#==== STEP 2: CORRELATION WITH IMP2 ====
+#### STEP 2: CORRELATION WITH IMP2 ####
 step_2_result_list = list()
 for (i in 1:length(comparisons)){
     human_mouse_map_homolog_subset = step_1_result_list[[i]]$human_mouse_map_homolog_subset
