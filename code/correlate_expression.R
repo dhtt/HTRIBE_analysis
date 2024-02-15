@@ -12,9 +12,9 @@ library(Orthology.eg.db)
 library(ggpubr) 
 setwd("~/Documents/BIOINFO/TRIBE/HTRIBE_analysis/code")
 
-all_datasets = data.frame(dataset = c('GSE57957', 'GSE25097', 'GSE14520', 'GSE54236', "current"),
-                          gene_symbol = c('Symbol', 'GeneSymbol', 'Gene Symbol', 'GENE_SYMBOL', NULL),
-                          conds = c('T$:N$', 'tumor:healthy|non_tumor', 'A$:B$', 'tumor:non-malignant', NULL)
+all_datasets = data.frame(dataset = c('GSE57957', 'GSE25097', 'GSE14520', 'GSE54236'),
+                          gene_symbol = c('Symbol', 'GeneSymbol', 'Gene Symbol', 'GENE_SYMBOL'),
+                          conds = c('T$:N$', 'tumor:healthy|non_tumor', 'A$:B$', 'tumor:non-malignant')
                           )
 phenotypes = c('Tumor', 'Normal')
 cor_methods = c("pearson", "spearman")
@@ -119,10 +119,12 @@ saveRDS(step_1_result_list, file = paste('../analyzed_result/expression_correlat
 
 length(step_1_result_list$`WT vs. IMP2`$tumor)
 length(step_1_result_list$`WT vs. IMP2`$normal)
+step_1_result_list = readRDS(paste('../analyzed_result/expression_correlation/', 'spearman', '/step_1_result_list_', 'GSE14520', '_', 1, '.RDS', sep=''))
+length(step_1_result_list[[1]]$human_mouse_map_homolog_subset$mouse)
+
+
 
 #### STEP 2: CORRELATION WITH IMP2 ####
-all_datasets$dataset
-
 for (dataset_id in all_datasets$dataset){
     dataset_length = 1
     if (dataset_id == "GSE14520"){
@@ -183,36 +185,51 @@ for (dataset_id in all_datasets$dataset){
             ), use.names=FALSE
             )
             colnames(r_values_df_melt) = c('R-value', 'gene_id', 'phenotype', 'type')
+                
+            gene_id_mouse = paste(sapply(r_values_df_melt$gene_id, function(x) 
+                return(step_1_result_list[[i]]$human_mouse_map_homolog_subset$mouse[step_1_result_list[[i]]$human_mouse_map_homolog_subset$human == x])),
+                collapse = "&"
+                )
+            r_values_df_melt$gene_id_mouse = strsplit(gene_id_mouse, "&")[[1]]
             step_2_result_list[[i]] = r_values_df_melt
         }
         names(step_2_result_list) = names(step_1_result_list)
-        
+
         # Get WT/mCherry vs. IMP2 group
         control_vs_IMP2_genes = setdiff(
-            union(step_2_result_list$`WT vs. IMP2`$gene_id[step_2_result_list$`WT vs. IMP2`$type == 'all'], 
-                  step_2_result_list$`mCherry vs. IMP2`$gene_id[step_2_result_list$`mCherry vs. IMP2`$type == 'all']), 
+            union(step_2_result_list$`WT vs. IMP2`$gene_id[step_2_result_list$`WT vs. IMP2`$type == 'all'],
+                  step_2_result_list$`mCherry vs. IMP2`$gene_id[step_2_result_list$`mCherry vs. IMP2`$type == 'all']),
             step_2_result_list$`WT vs. mCherry`$gene_id[step_2_result_list$`WT vs. mCherry`$type == 'all'])
+        
         control_vs_IMP2_result = rbind(step_2_result_list$`WT vs. IMP2`, step_2_result_list$`mCherry vs. IMP2`)
         control_vs_IMP2_result = unique(control_vs_IMP2_result[control_vs_IMP2_result$gene_id %in% control_vs_IMP2_genes, ])
         step_2_result_list[[4]] = control_vs_IMP2_result
         names(step_2_result_list) = comparison_names
-        
         saveRDS(step_2_result_list, file = paste("../analyzed_result/expression_correlation/", cor_method, "/step_2_result_list_", dataset_id, '_', dataset_no, '.RDS', sep=''))
     }
 }
-dim(step_2_result_list[[3]])
-table(step_2_result_list[[3]]$gene_id[step_2_result_list[[3]]$type == 'other'] == "")
-step_2_result_list[[4]]
+
 
 #### STEP 3: PLOT R-VALUE ####
+htribe_deseq2_genes = list(
+    strsplit(c("Calu, Ccdc90b, Cdadc1, Clta, Cped1, Cplane1, Creb1, Crem, Cyp2c38, Dck, Ddx11, Ddx58, Dhx58, Dlg1, Ecm1, Elmod3, Esam, Fktn, Gm20604, Grk6, Hck, Igtp, Macf1, Mad2l2, Me2, Met, Mff, Mmrn2, Mtif3, Mug1, Numb, Parp14, Pecam1, Plec, Ppil3, Rabep1, Reln, Retreg1, Rnf38, Slc66a2, Stx5a, Syt12, Taf6, Tardbp, Tdrd7, Tgtp1, Tmem62, Tnpo1, Trim39, Vps39, Wnk1"), ', ')[[1]],
+    strsplit(c('Creb1, Crem, Fam219a, Fktn, Gm20604, Map7d1, Med16, Nfix, Prpf40b, Ptbp3, Rabep1, Smim14, Taf6, Tardbp, Tnpo1, Vps39'), ', ')[[1]],
+    strsplit(c('Add3, Cdadc1, Cyp27a1, Dhx58, Dlg1, Dusp12, Fktn, Gm11837, Hsd3b5, Lrp11, Mmrn2, Oasl1, Pigw, Plec, Pnpt1, Prpf40b, Retreg1, Rnf38, Slfn4, Tdrd7, Ttbk2, Ubr5, Wnk1, Zfp708'), ', ')[[1]],
+    strsplit(c("Agfg1, Ccdc90b, Creb1, Cyp2c38, Dck, Mad2l2, Med16, Rabep1, Taf6, Tardbp, Tmem62, Tnpo1, Trim39"), ', ')[[1]])
+
+
 pretify_pval <- function(p_val){
     return(ifelse(round(p_val, 3) < 0.05, ": < 0.05", paste(": ", round(p_val, 3), sep='')))
 }
-plot_ecdf <- function(result_list, plot_title, plot_normal_only = TRUE, show_ks_test = TRUE){
+plot_ecdf <- function(result_list, plot_title, plot_normal_only = TRUE, show_ks_test = TRUE, plot_deseq2 = FALSE){
     if (plot_normal_only){
         result_list = result_list[result_list$phenotype == "Normal", ]
-        ecdf_ <- ggplot(result_list, aes(`R-value`, colour=type)) +
-            stat_ecdf(aes(colour=type), n = 500) 
+        if (plot_deseq2)
+            ecdf_ <- ggplot(result_list, aes(`R-value`, colour=type, linetype=is_deseq)) +
+                stat_ecdf(aes(colour=type), n = 500) 
+        else 
+            ecdf_ <- ggplot(result_list, aes(`R-value`, colour=type)) +
+                stat_ecdf(aes(colour=type), n = 500)
         
         if (show_ks_test){
             ks_test_all = ks.test(result_list[result_list$type == "all" , "R-value"][[1]], 
@@ -268,6 +285,7 @@ plot_ecdf <- function(result_list, plot_title, plot_normal_only = TRUE, show_ks_
     return(ecdf)
 }
 
+plot_deseq2 = F
 ecdf_list = c()
 ecdf_plotname = c()
 for (dataset_id in all_datasets$dataset){
@@ -280,8 +298,13 @@ for (dataset_id in all_datasets$dataset){
         
         for (j in 1:length(step_2_result_list)){
             plot_data = step_2_result_list[[j]]
-            plot_data = plot_data[plot_data$type != "50" & plot_data$gene_id != "", ]
-            ecdf_list = c(ecdf_list, list(plot_ecdf(plot_data, comparison_names[j], plot_normal_only = TRUE, show_ks_test = TRUE)))
+            plot_data = plot_data %>% dplyr::filter(type != "50" & gene_id != "")
+            if (plot_deseq2)
+                plot_data = plot_data %>% dplyr::mutate(
+                    is_deseq = ifelse(gene_id_mouse %in% htribe_deseq2_genes[[j]], T, F)
+                    ) %>%
+                dplyr::filter(!(type == 'other' & is_deseq == T))
+            ecdf_list = c(ecdf_list, list(plot_ecdf(plot_data, comparison_names[j], plot_normal_only = TRUE, show_ks_test = TRUE, plot_deseq2 = plot_deseq2)))
         }
         plotname <- paste(c(dataset_id, i), collapse="_")
         ecdf_plotname = c(ecdf_plotname, c(plotname))
@@ -298,7 +321,8 @@ ecdf_plotname <- sapply(ecdf_plotname, function(x) {
 })
 names(ecdf_list) = rep(ecdf_plotname, each=4)
 
-png(paste("../analyzed_result/expression_correlation/", cor_method, "/ECDF_expression_combined_100.png", sep=''), width = 14, height = 13, unit = 'in', res = 200)
+
+png(paste("../analyzed_result/expression_correlation/", cor_method, "/ECDF_expression_combined.png", sep=''), width = 14, height = 13, unit = 'in', res = 200)
 ggarrange(plotlist = ecdf_list[grep("GSE57957|GSE54236|GSE14520.", names(ecdf_list))], ncol=4, nrow=4, 
           align = 'hv', 
           label.x = rep(c(0, -0.15, -0.15, 0), each=3),
