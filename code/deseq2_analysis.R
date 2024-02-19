@@ -61,6 +61,7 @@ dds_result_WT_IMP2 <- results(dds_normed, contrast = c('group', 'WT', 'IMP2'))
 dds_result_mCherry_IMP2 <- results(dds_normed, contrast = c('group', 'mCherry', 'IMP2'))
 
 vsd = vst(dds)
+
 # PCA plot for transformed counts 
 png("analyzed_result/PCA_deseq2.png", width = 6, height = 4, unit = 'in', res = 200)
 plotPCA(vsd, intgroup="group", ntop=500) +
@@ -169,6 +170,17 @@ sig_genes_id = lapply(sig_gene_list, function(x) {
     sig_genes = map_gene_id(sig_genes, transcript_table, reverse = T)
     return(sig_genes)
 })
+temp = lapply(htribe_deseq2_genes, function(genes){
+    return(map_gene_id(genes, transcript_table, strip_char = T, unique = F, reverse = F))
+})
+i = 1
+list_1 = lapply(rownames(res_list[[i]]), function(x) strsplit(x, '.', fixed = T)[[1]][1])
+temp_1 = res_list[[i]][list_1 %in% temp[[4]], ]
+temp_1$gene_id = map_gene_id(rownames(temp_1), transcript_table, strip_char = T, unique = F, reverse = T)
+temp_1$direction = ifelse(temp_1$log2FoldChange > 0, "Up", "Down")
+temp_1 = as.data.frame(temp_1[abs(temp_1$log2FoldChange) > 1 & temp_1$padj < 0.05 & !is.na(temp_1$padj), ])
+fwrite(temp_1, file=paste(names(res_list)[i], '.csv', sep=''), quote = F, sep='\t', row.names = T)
+
 
 sig_genes_id[[4]] = setdiff(union(sig_genes_id$mCherry_IMP2, sig_genes_id$WT_IMP2), sig_genes_id$WT_mCherry)
 sig_genes_id[[5]] = union(sig_genes_id$mCherry_IMP2, sig_genes_id$WT_IMP2)

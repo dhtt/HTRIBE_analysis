@@ -15,7 +15,7 @@ setwd("~/Documents/BIOINFO/TRIBE/HTRIBE_analysis/code")
 phenotypes = c('WT', 'mCherry', "IMP2")
 cor_method = "spearman"
 comparisons <- c('wt_imp2', 'mcherry_imp2', 'wt_mcherry', 'wt/mcherry-imp2')
-comparison_names <- c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry', 'WT/mCherry vs. IMP2')
+comparison_names <- c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry', 'WT/mCherry vs. IMP2 - WT vs. mCherry')
 
 
 #### STEP 1: PREPARE EXPRESSION DATA FROM CURRENT STUDY ####
@@ -84,8 +84,12 @@ control_vs_IMP2_result = unique(control_vs_IMP2_result[control_vs_IMP2_result$ge
 correlation_result_list[[4]] = control_vs_IMP2_result
 names(correlation_result_list) = comparison_names
 
-saveRDS(correlation_result_list, file = paste("../analyzed_result/expression_correlation/", cor_method, "/result_list_", dataset_id, '_WTmCherry.RDS', sep=''))
-# correlation_result_list = readRDS(paste("../analyzed_result/expression_correlation/", cor_method, "/result_list_", dataset_id, '.RDS', sep=''))
+# saveRDS(correlation_result_list, file = paste("../analyzed_result/expression_correlation/", cor_method, "/result_list_", dataset_id, '_WTmCherry.RDS', sep=''))
+correlation_result_list = readRDS(paste("../analyzed_result/expression_correlation/", cor_method, "/result_list_", dataset_id, '_WTmCherry.RDS', sep=''))
+
+temp = correlation_result_list[[1]][correlation_result_list[[1]]$gene_id %in% htribe_deseq2_genes[[4]], ]
+temp
+
 
 
 ### STEP 3: PLOT R-VALUE ECDF ####
@@ -95,15 +99,20 @@ htribe_deseq2_genes = list(
     strsplit(c('Add3, Cdadc1, Cyp27a1, Dhx58, Dlg1, Dusp12, Fktn, Gm11837, Hsd3b5, Lrp11, Mmrn2, Oasl1, Pigw, Plec, Pnpt1, Prpf40b, Retreg1, Rnf38, Slfn4, Tdrd7, Ttbk2, Ubr5, Wnk1, Zfp708'), ', ')[[1]],
     strsplit(c("Agfg1, Ccdc90b, Creb1, Cyp2c38, Dck, Mad2l2, Med16, Rabep1, Taf6, Tardbp, Tmem62, Tnpo1, Trim39"), ', ')[[1]])
 
+plot_deseq2 = F
 plot_data_list = list()
 for (i in 1:length(correlation_result_list)){
     plot_data_list[[i]] = correlation_result_list[[i]] %>%
-        dplyr::filter(type != '50' & gene_id != "") %>%
+        dplyr::filter(type != '50' & gene_id != "")  %>% 
         dplyr::mutate(
-                      comparison = paste(LETTERS[i], names(correlation_result_list)[i], sep='. '),
-                      is_deseq = ifelse(gene_id %in% htribe_deseq2_genes[[i]], T, F)
-                      ) %>%
-        dplyr::filter(!(type == 'other' & is_deseq == T))
+            comparison = paste(LETTERS[i], names(correlation_result_list)[i], sep='. ')
+            )
+    if (plot_deseq2) 
+        plot_data_list[[i]] = plot_data_list[[i]] %>% 
+            dplyr::mutate(
+                is_deseq = ifelse(gene_id %in% htribe_deseq2_genes[[i]], T, F)
+                ) %>%
+            dplyr::filter(!(type == 'other' & is_deseq == T))
 }
 plot_data_list = do.call('rbind', plot_data_list)
 
@@ -113,12 +122,18 @@ pretify_pval <- function(p_val){
 }
 
 plot_ecdf <- function(result_list, plot_title){
-    ecdf <- ggplot(result_list, aes(`R-value`, colour=type)) +
-        stat_ecdf(aes(colour=type, linetype=is_deseq), n = 100, alpha = 0.8)  +
+    if (plot_deseq2){
+        ecdf <- ggplot(result_list, aes(`R-value`, colour=type)) +
+            stat_ecdf(aes(colour=type, linetype=is_deseq), n = 100, alpha = 0.8) +
+            scale_linetype_discrete(name = "A2G genes with altered expression", label=c('False', 'True')) 
+    } else {
+        ecdf <- ggplot(result_list, aes(`R-value`, colour=type)) +
+            stat_ecdf(aes(colour=type), n = 100, alpha = 0.8) 
+    }
+    ecdf <- ecdf + 
         facet_wrap(vars(result_list$comparison)) +
         xlab("R-values") + ylab("Probability") +
         scale_color_discrete(name = "Top A2G genes", label=c('100', '500', 'All', 'Other')) +
-        scale_linetype_discrete(name = "A2G genes with altered expression", label=c('False', 'True')) +
         xlim(c(-1, 1)) +
         theme_minimal() +
         theme(
@@ -136,7 +151,7 @@ plot_ecdf <- function(result_list, plot_title){
 }
 ecdf = plot_ecdf(plot_data_list, "")
 
-png(paste("../analyzed_result/expression_correlation/", cor_method, "/ECDF_expression_current_WTmCherry_withdeseq2.png", sep=''), width = 7, height = 6, unit = 'in', res = 200)
+png(paste("../analyzed_result/expression_correlation/", cor_method, "/ECDF_expression_current_WTmCherry.png", sep=''), width = 8, height = 6.5, unit = 'in', res = 200)
 ecdf
 dev.off()
 

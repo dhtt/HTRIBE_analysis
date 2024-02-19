@@ -17,9 +17,9 @@ all_datasets = data.frame(dataset = c('GSE57957', 'GSE25097', 'GSE14520', 'GSE54
                           conds = c('T$:N$', 'tumor:healthy|non_tumor', 'A$:B$', 'tumor:non-malignant')
                           )
 phenotypes = c('Tumor', 'Normal')
-cor_methods = c("pearson", "spearman")
+cor_method = "spearman"
 comparisons <- c('wt_imp2', 'mcherry_imp2', 'wt_mcherry', 'wt/mcherry-imp2')
-comparison_names <- c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry', 'WT/mCherry vs. IMP2')
+comparison_names <- c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry', 'WT/mCherry vs. IMP2 - WT vs. mCherry')
 
 #### STEP 0: Prepare expression data ####
 dataset_id = "GSE25097"
@@ -226,7 +226,8 @@ plot_ecdf <- function(result_list, plot_title, plot_normal_only = TRUE, show_ks_
         result_list = result_list[result_list$phenotype == "Normal", ]
         if (plot_deseq2)
             ecdf_ <- ggplot(result_list, aes(`R-value`, colour=type, linetype=is_deseq)) +
-                stat_ecdf(aes(colour=type), n = 500) 
+                stat_ecdf(aes(colour=type), n = 500) +
+                scale_linetype_discrete(name = "A2G genes with altered expression", label=c('False', 'True')) 
         else 
             ecdf_ <- ggplot(result_list, aes(`R-value`, colour=type)) +
                 stat_ecdf(aes(colour=type), n = 500)
@@ -269,7 +270,7 @@ plot_ecdf <- function(result_list, plot_title, plot_normal_only = TRUE, show_ks_
         }
     
     ecdf <- ecdf_ + xlab("R-values") + ylab("Probability") +
-        scale_color_discrete(name = "Top A2G genes") +
+        scale_color_discrete(name = "Top A2G genes", label=c('100', '500', 'All', 'Other')) +
         xlim(c(-1, 1)) +
         theme_minimal() +
         ggtitle(plot_title) +
@@ -285,7 +286,7 @@ plot_ecdf <- function(result_list, plot_title, plot_normal_only = TRUE, show_ks_
     return(ecdf)
 }
 
-plot_deseq2 = F
+plot_deseq2 = T
 ecdf_list = c()
 ecdf_plotname = c()
 for (dataset_id in all_datasets$dataset){
@@ -322,7 +323,7 @@ ecdf_plotname <- sapply(ecdf_plotname, function(x) {
 names(ecdf_list) = rep(ecdf_plotname, each=4)
 
 
-png(paste("../analyzed_result/expression_correlation/", cor_method, "/ECDF_expression_combined.png", sep=''), width = 14, height = 13, unit = 'in', res = 200)
+png(paste("../analyzed_result/expression_correlation/", cor_method, "/ECDF_expression_combined_deseq.png", sep=''), width = 15, height = 13, unit = 'in', res = 200)
 ggarrange(plotlist = ecdf_list[grep("GSE57957|GSE54236|GSE14520.", names(ecdf_list))], ncol=4, nrow=4, 
           align = 'hv', 
           label.x = rep(c(0, -0.15, -0.15, 0), each=3),
