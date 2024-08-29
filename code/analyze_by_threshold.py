@@ -52,7 +52,7 @@ def get_sorted_labels(ax_):
     return handlers_dict
 
 
-def generate_venn_diagram(genes_by_comparison_type_, analyzed_result_path_, threshold_):
+def generate_venn_diagram(genes_by_comparison_type_, analyzed_result_path_, threshold_, region):
     """
     Generates a Venn diagram based on the given genes by comparison type.
 
@@ -64,17 +64,19 @@ def generate_venn_diagram(genes_by_comparison_type_, analyzed_result_path_, thre
     Returns:
     - None
     """
-    fig, ax = plt.subplots(figsize=(6, 6),  nrows=1, ncols=1)
+    fig, ax = plt.subplots(figsize=(5, 5),  nrows=1, ncols=1)
     venn3(subsets=[set(genes_by_comparison_type_['wt_mcherry'].keys()),
                    set(genes_by_comparison_type_['wt_imp2'].keys()),
                    set(genes_by_comparison_type_['mcherry_imp2'].keys())],
-          set_labels=['WT vs. mCherry', 'WT vs. IMP2', 'mCherry vs. IMP2'])
+          set_labels=['WT vs. mCherry', 'WT vs. IMP2', 'mCherry vs. IMP2'],
+          set_colors=['#EA6B66', '#97D077', '#FFD966'], alpha=1)
     venn3_circles(subsets=[set(genes_by_comparison_type_['wt_mcherry'].keys()),
                            set(genes_by_comparison_type_['wt_imp2'].keys()),
                            set(genes_by_comparison_type_['mcherry_imp2'].keys())],
-                  alpha=0.4, ax=ax)
-    fig.savefig(analyzed_result_path_.joinpath(
-        'overlap_' + threshold_ + '.png'))
+                  color='white', ax=ax, linewidth=1)
+    ax.set_title('T = ' + threshold_ + ', ' + "/".join(region.split("_")), fontweight='bold')
+    fig.savefig(analyzed_result_path_.joinpath('overlap_' + threshold_ + '.png'),
+                dpi=400,  bbox_inches='tight')
     plt.close(fig)
 
 
@@ -319,7 +321,7 @@ if __name__ == '__main__':
     workdir = sys.argv[1]
     threshold = sys.argv[2]
     region = sys.argv[3]
-
+        
     if region != "":
         collapse_regions = [region] 
     else: 
@@ -341,33 +343,34 @@ if __name__ == '__main__':
         # Generate Venn diagram to compare the overlap between the detected genes for different comparisons
         generate_venn_diagram(genes_by_comparison_type_=genes_by_comparison_type,
                               analyzed_result_path_=analyzed_result_path, 
-                              threshold_=threshold)
-        # Report significant genes
-        report_sig_genes(sig_gene_filename=analyzed_result_path.joinpath('sig_genes' + region + '.txt'), 
-                         threshold=threshold, 
-                         genes_by_comparison_type=genes_by_comparison_type, 
-                         comparison_pair=comparison_pair)
+                              threshold_=threshold,
+                              region=region)
+        # # Report significant genes
+        # report_sig_genes(sig_gene_filename=analyzed_result_path.joinpath('sig_genes' + region + '.txt'), 
+        #                  threshold=threshold, 
+        #                  genes_by_comparison_type=genes_by_comparison_type, 
+        #                  comparison_pair=comparison_pair)
                 
-        # SECTION 2: DISTANCE BETWEEN PAIR COMPARISONS
-        # Report Jaccard distance based on shared genes
-        main_output_filename = analyzed_result_path.joinpath('output.txt')
-        write_pairwise_jaccard_distance(main_output_filename=main_output_filename, 
-                                        threshold=threshold, 
-                                        genes_by_comparison_type=genes_by_comparison_type, 
-                                        comparison_pair=comparison_pair)
+        # # SECTION 2: DISTANCE BETWEEN PAIR COMPARISONS
+        # # Report Jaccard distance based on shared genes
+        # main_output_filename = analyzed_result_path.joinpath('output.txt')
+        # write_pairwise_jaccard_distance(main_output_filename=main_output_filename, 
+        #                                 threshold=threshold, 
+        #                                 genes_by_comparison_type=genes_by_comparison_type, 
+        #                                 comparison_pair=comparison_pair)
             
-        # SECTION 3: COMPARE CURRENT RESULTS TO JEETS RESULTS
-        compare_with_jeet_result(Jeet_result_path=workdir + '/Jeet_result/', 
-                                 threshold=threshold, 
-                                 genes_by_comparison_type=genes_by_comparison_type, 
-                                 comparison_type=comparison_type, 
-                                 main_output_filename=main_output_filename)
+        # # SECTION 3: COMPARE CURRENT RESULTS TO JEETS RESULTS
+        # compare_with_jeet_result(Jeet_result_path=workdir + '/Jeet_result/', 
+        #                          threshold=threshold, 
+        #                          genes_by_comparison_type=genes_by_comparison_type, 
+        #                          comparison_type=comparison_type, 
+        #                          main_output_filename=main_output_filename)
                 
-        # SECTION 4: PLOT COMMON GENES BETWEEN PAIR COMPARISONS
-        coords_by_no_editing_sites_filename = analyzed_result_path.joinpath('coords_by_no_editing_sites' + threshold + '.pickle')
-        coords_by_no_editing_sites = generate_coords_by_no_editing_sites(coords_by_no_editing_sites_filename=coords_by_no_editing_sites_filename, 
-                                                                        comparison_pair=comparison_pair, 
-                                                                        genes_by_comparison_type=genes_by_comparison_type)
-        plot_scatterplots(coords_by_no_editing_sites=coords_by_no_editing_sites, 
-                          analyzed_result_path=analyzed_result_path, 
-                          threshold=threshold)
+        # # SECTION 4: PLOT COMMON GENES BETWEEN PAIR COMPARISONS
+        # coords_by_no_editing_sites_filename = analyzed_result_path.joinpath('coords_by_no_editing_sites' + threshold + '.pickle')
+        # coords_by_no_editing_sites = generate_coords_by_no_editing_sites(coords_by_no_editing_sites_filename=coords_by_no_editing_sites_filename, 
+        #                                                                 comparison_pair=comparison_pair, 
+        #                                                                 genes_by_comparison_type=genes_by_comparison_type)
+        # plot_scatterplots(coords_by_no_editing_sites=coords_by_no_editing_sites, 
+        #                   analyzed_result_path=analyzed_result_path, 
+        #                   threshold=threshold)

@@ -67,17 +67,18 @@ def analyze_replicates(replicate_result_path, threshold):
         with open(analyzed_result_path.joinpath('genes_by_comparison_type_' + threshold + '.pickle'), 'wb') as file:
             pickle.dump(genes_by_comparison_type, file,
                         protocol=pickle.HIGHEST_PROTOCOL)
+            
+    
+    pairs = list(genes_by_comparison_type.keys())
+    pairs.sort()
+    compared_pairs = list(combinations(pairs, 2))
+    compared_pairs = sorted(compared_pairs, key = lambda elem: (elem[0], elem[1]))
+    
+    filtered_pairs = [pair for pair in compared_pairs if ("_7" in pair[0] and "_7" in pair[1]) or ("_8" in pair[0] and "_8" in pair[1]) or ("_9" in pair[0] and "_9" in pair[1])]
 
-        pairs = list(genes_by_comparison_type.keys())
-        pairs.sort()
-        compared_pairs = list(combinations(pairs, 2))
-        compared_pairs = sorted(compared_pairs, key = lambda elem: (elem[0], elem[1]))
-        
-        filtered_pairs = [pair for pair in compared_pairs if ("_7" in pair[0] and "_7" in pair[1]) or ("_8" in pair[0] and "_8" in pair[1]) or ("_9" in pair[0] and "_9" in pair[1])]
-
-        for pair in filtered_pairs:
-            jaccard_index = compute_jaccard(genes_by_comparison_type[pair[0]].keys(), genes_by_comparison_type[pair[1]].keys())
-            print(f"{pair}: {round(jaccard_index, 2)}")
+    for pair in filtered_pairs:
+        jaccard_index = compute_jaccard(genes_by_comparison_type[pair[0]].keys(), genes_by_comparison_type[pair[1]].keys())
+        print(f"{pair}: {round(jaccard_index, 2)}")
 
 if __name__ == '__main__':
     replicate_result_path = sys.argv[1]
