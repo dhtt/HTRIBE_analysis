@@ -14,7 +14,8 @@ setwd("~/Documents/BIOINFO/TRIBE/HTRIBE_analysis/code")
 
 all_datasets = data.frame(dataset = c('GSE57957', 'GSE25097', 'GSE14520', 'GSE54236'),
                           gene_symbol = c('Symbol', 'GeneSymbol', 'Gene Symbol', 'GENE_SYMBOL'),
-                          conds = c('T$:N$', 'tumor:healthy|non_tumor', 'A$:B$', 'tumor:non-malignant')
+                          conds = c('T$:N$', 'tumor:healthy|non_tumor', 'A$:B$', 'tumor:non-malignant'),
+                          dataset_length = c(1, 1, 2, 1)
                           )
 phenotypes = c('Tumor', 'Normal')
 cor_method = "spearman"
@@ -22,8 +23,8 @@ comparisons <- c('wt_imp2', 'mcherry_imp2', 'wt_mcherry', 'wt/mcherry-imp2')
 comparison_names <- c('WT vs. IMP2', 'mCherry vs. IMP2', 'WT vs. mCherry', 'WT/mCherry vs. IMP2 - WT vs. mCherry')
 
 #### STEP 0: Prepare expression data ####
-dataset_id = "GSE25097"
-dataset_no = 1
+dataset_id = "GSE25097" # id is one of the all_datasets$dataset 
+dataset_no = 1 # corresponding dataset_length
 dataset <- getGEO(dataset_id)
 count_df <- exprs(dataset[[dataset_no]])
 
@@ -119,10 +120,15 @@ saveRDS(step_1_result_list, file = paste('../analyzed_result/expression_correlat
 
 length(step_1_result_list$`WT vs. IMP2`$tumor)
 length(step_1_result_list$`WT vs. IMP2`$normal)
-step_1_result_list = readRDS(paste('../analyzed_result/expression_correlation/', 'spearman', '/step_1_result_list_', 'GSE14520', '_', 1, '.RDS', sep=''))
-length(step_1_result_list[[1]]$human_mouse_map_homolog_subset$mouse)
+step_1_result_list = readRDS(paste('../analyzed_result/expression_correlation_IMP2/', cor_method, '/step_1_result_list_', dataset_id, '_', dataset_no, '.RDS', sep=''))
 
-
+dim(step_1_result_list[[1]]$count_df)
+dataset_id = 'GSE57957'
+dataset_no = 1 
+step_1_result_list = readRDS(paste('../analyzed_result/expression_correlation_IMP2/', cor_method, '/step_1_result_list_', dataset_id, '_', dataset_no, '.RDS', sep=''))
+step_2_result_list = readRDS(paste("../analyzed_result/expression_correlation_IMP2/", cor_method, "/step_2_result_list_", dataset_id, '_', dataset_no, '.RDS', sep=''))
+head(step_2_result_list$`WT vs. IMP2`)
+dim(step_1_result_list$`WT vs. IMP2`$count_df)[1]
 
 #### STEP 2: CORRELATION WITH IMP2 ####
 for (dataset_id in all_datasets$dataset){
@@ -132,7 +138,7 @@ for (dataset_id in all_datasets$dataset){
     }
     for (dataset_no in 1:dataset_length){
         print(paste(dataset_id, dataset_no, sep = ' '))
-        step_1_result_list = readRDS(paste('../analyzed_result/expression_correlation/', cor_method, '/step_1_result_list_', dataset_id, '_', dataset_no, '.RDS', sep=''))
+        step_1_result_list = readRDS(paste('../analyzed_result/expression_correlation_IMP2/', cor_method, '/step_1_result_list_', dataset_id, '_', dataset_no, '.RDS', sep=''))
         step_2_result_list = list()
         
         for (i in 1:length(step_1_result_list)){
@@ -205,7 +211,7 @@ for (dataset_id in all_datasets$dataset){
         control_vs_IMP2_result = unique(control_vs_IMP2_result[control_vs_IMP2_result$gene_id %in% control_vs_IMP2_genes, ])
         step_2_result_list[[4]] = control_vs_IMP2_result
         names(step_2_result_list) = comparison_names
-        saveRDS(step_2_result_list, file = paste("../analyzed_result/expression_correlation/", cor_method, "/step_2_result_list_", dataset_id, '_', dataset_no, '.RDS', sep=''))
+        saveRDS(step_2_result_list, file = paste("../analyzed_result/expression_correlation_IMP2/", cor_method, "/step_2_result_list_", dataset_id, '_', dataset_no, '.RDS', sep=''))
     }
 }
 
@@ -295,7 +301,7 @@ for (dataset_id in all_datasets$dataset){
         dataset_length = 2
     }
     for (i in 1:dataset_length){
-        step_2_result_list = readRDS(paste("../analyzed_result/expression_correlation/", cor_method, "/step_2_result_list_", dataset_id, '_', i, '.RDS', sep=''))
+        step_2_result_list = readRDS(paste("../analyzed_result/expression_correlation_IMP2/", cor_method, "/step_2_result_list_", dataset_id, '_', i, '.RDS', sep=''))
         
         for (j in 1:length(step_2_result_list)){
             plot_data = step_2_result_list[[j]]
@@ -322,8 +328,7 @@ ecdf_plotname <- sapply(ecdf_plotname, function(x) {
 })
 names(ecdf_list) = rep(ecdf_plotname, each=4)
 
-
-png(paste("../analyzed_result/expression_correlation/", cor_method, "/ECDF_expression_combined_deseq.png", sep=''), width = 15, height = 13, unit = 'in', res = 200)
+png(paste("../analyzed_result/expression_correlation_IMP2/", cor_method, "/ECDF_expression_combined_deseq.png", sep=''), width = 15, height = 13, unit = 'in', res = 200)
 ggarrange(plotlist = ecdf_list[grep("GSE57957|GSE54236|GSE14520.", names(ecdf_list))], ncol=4, nrow=4, 
           align = 'hv', 
           label.x = rep(c(0, -0.15, -0.15, 0), each=3),

@@ -87,9 +87,6 @@ names(correlation_result_list) = comparison_names
 # saveRDS(correlation_result_list, file = paste("../analyzed_result/expression_correlation/", cor_method, "/result_list_", dataset_id, '_WTmCherry.RDS', sep=''))
 correlation_result_list = readRDS(paste("../analyzed_result/expression_correlation/", cor_method, "/result_list_", dataset_id, '_WTmCherry.RDS', sep=''))
 
-temp = correlation_result_list[[1]][correlation_result_list[[1]]$gene_id %in% htribe_deseq2_genes[[4]], ]
-temp
-
 
 
 ### STEP 3: PLOT R-VALUE ECDF ####

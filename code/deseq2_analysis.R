@@ -170,18 +170,6 @@ sig_genes_id = lapply(sig_gene_list, function(x) {
     sig_genes = map_gene_id(sig_genes, transcript_table, reverse = T)
     return(sig_genes)
 })
-temp = lapply(htribe_deseq2_genes, function(genes){
-    return(map_gene_id(genes, transcript_table, strip_char = T, unique = F, reverse = F))
-})
-i = 1
-list_1 = lapply(rownames(res_list[[i]]), function(x) strsplit(x, '.', fixed = T)[[1]][1])
-temp_1 = res_list[[i]][list_1 %in% temp[[4]], ]
-temp_1$gene_id = map_gene_id(rownames(temp_1), transcript_table, strip_char = T, unique = F, reverse = T)
-temp_1$direction = ifelse(temp_1$log2FoldChange > 0, "Up", "Down")
-temp_1 = as.data.frame(temp_1[abs(temp_1$log2FoldChange) > 1 & temp_1$padj < 0.05 & !is.na(temp_1$padj), ])
-fwrite(temp_1, file=paste(names(res_list)[i], '.csv', sep=''), quote = F, sep='\t', row.names = T)
-
-
 sig_genes_id[[4]] = setdiff(union(sig_genes_id$mCherry_IMP2, sig_genes_id$WT_IMP2), sig_genes_id$WT_mCherry)
 sig_genes_id[[5]] = union(sig_genes_id$mCherry_IMP2, sig_genes_id$WT_IMP2)
 names(sig_genes_id) = c(names(sig_gene_list)[1:3], 'WT/mCherry_IMP2 - WT_mCherry', 'WT/mCherry_IMP2')
@@ -189,7 +177,7 @@ names(sig_genes_id) = c(names(sig_gene_list)[1:3], 'WT/mCherry_IMP2 - WT_mCherry
 
 ################ SIMILARITY BETWEEN EACH OTHER AND TO HTRIBE RESULTS ################ 
 #### Prepare datasets ####
-sig_genes_HTRIBE <- read.delim("~/Documents/BIOINFO/TRIBE/HTRIBE_analysis/HTRIBE_sig_gene_1%/sig_genesCDS_UTR.txt", header=FALSE, comment.char="#")
+sig_genes_HTRIBE <- read.delim("~/Documents/BIOINFO/TRIBE/HTRIBE_analysis/HTRIBE_result/HTRIBE_sig_gene_1%/sig_genesCDS_UTR.txt", header=FALSE, comment.char="#")
 ground_truth_lists = lapply(sig_genes_HTRIBE, function(x){return(strsplit(x, ','))})[[1]]
 names(ground_truth_lists) = c('WT_IMP2', 'mCherry_IMP2', 'WT_mCherry')
 ground_truth_lists[[4]] = setdiff(union(ground_truth_lists$mCherry_IMP2, ground_truth_lists$WT_IMP2), ground_truth_lists$WT_mCherry)
@@ -203,6 +191,20 @@ jaccard_index <- function(list1, list2){
     print(paste("No all genes: ", length(unique(union(list1, list2))), collapse=""))
     return(length(intersect(list1, list2))/length(union(list1, list2)))
 }
+dexseq_list = list(c("Abcc1", "Adam11", "Adamts9", "Adamtsl2", "Ank2", "Ank3", "Ankrd24", "Ano1", "Anxa1", "Apbb2", "Arhgef2", "Asap3", "Atp7b", "Atxn7l1", "Atxn7l2+Cyb561d1", "AU021092", "B230217C12Rik", "Bend3", "Bid", "Caln1", "Card11", "Carmn", "Cdc6", "Cep164", "Cep295", "Chrna2", "Clstn1", "Cluap1", "Cluh", "Commd5", "Cyb5r1", "Cyp2j6", "Cyp4f13", "Cyp4f18", "Dgkh", "Dhrs7b", "Dph6", "Dst", "Dusp22", "Ehbp1l1", "Eif4e3", "Eml5", "Epb41l1", "Eva1a", "Fam151b", "Fbln1", "Flna", "Flt4", "Fuz", "Gba2", "Ggta1", "Gm13067", "Gm16286+Txnl4a", "Gm30446", "Gm35339", "Gm51425", "Gpr35", "Grb10", "H2-Q1", "Hip1", "Hk1", "Hsf4", "Hspg2", "Ifi209", "Ifi213", "Ifi47", "Ifnar2", "Ift122", "Ift140", "Il18", "Ints2", "Jarid2", "Katnip", "Kdm4b", "Klf15", "Lrig3", "Ly75", "Ly9", "Lyve1", "Madd", "Map4k2", "Marco", "Mark2", "Mark3", "Med20+Usp49+Gm20517", "Mertk", "Mir5129+Zeb2", "Mroh1", "Mtrr", "Myo7a", "Nbea", "Nme1", "Npdc1", "Nt5dc3", "Numb", "Oas3", "Oasl2", "Oxct1", "P2rx3", "Pbx2", "Phyhd1", "Pigl", "Plin4", "Ppil1", "Psap", "Ptprs", "Rasa4", "Rian", "Rpgrip1l", "Rtel1", "Rtkn", "Rtp4", "Rubcnl", "Rxrg", "Sccpdh", "Sertad3", "Sh3bp5l", "Sh3kbp1", "Slc22a15", "Slc25a22", "Slc26a6", "Slc27a1", "Slc38a4", "Slco3a1", "Snhg17", "Snrnp25", "Spg11", "Spns2", "Srl", "St8sia4", "Strip1", "Susd1", "Tbc1d31", "Tbc1d32", "Tk2", "Tmem237", "Tmem43", "Tnfrsf26", "Tpst1", "Trem2", "Tsku", "Ttyh3", "Uevld", "Unc45a", "Vrk2", "Wdr76", "Wdsub1", "Zbtb17", "Zbtb20+Mir568", "Zfp236", "Zfp558", "Zfp598", "Zfp939+Gm28455", "Zfp984", "Zswim4", "Zw10"),
+     c("Abcg2", "Akap1", "Cdyl2", "Cul7", "Cyp4f13", "Dapk3", "Dapk3", "Dhx30", "Dnmbp", "Dock2", "Ehmt2", "Eml2", "Enah", "Fbf1", "Gba", "Gm30081", "Gm31012", "Gm46363", "Gpr63", "Herc3", "Igf2bp2", "Ints1", "Itga7", "LOC115489189+Lonrf3", "Ltbp4", "Mamdc4", "Mir7662+Tspan15", "Mycbpap", "Naalad2", "Ogdh", "Phip", "Pik3cd", "Plekhm2", "Pm20d2", "Pole", "Pwwp2a", "Rarb", "Retreg3", "Shroom3", "Slc16a5", "Smarca4", "Syk", "Tango2", "Tbc1d19", "Tbk1", "Telo2", "Tepsin", "Tmco3", "Zdhhc24", "Zfp558", "Zfp661"), 
+     c("Ablim1", "Acap3", "Adam11", "Aldh3b1", "Ank3", "Anxa1", "Asap3", "Atp11a", "Bicc1", "C2cd3", "Catsper2", "Cdan1", "Cdk5rap3", "Cdt1", "Chn2", "Cux1", "Cyld", "Ddx11", "Dhodh", "Dst", "Ehbp1l1", "Eif4e3", "Eipr1", "Elmo1", "Epb41l1", "Fam120c", "Galt", "Gba2", "Gm16286+Txnl4a", "Gm33742", "Gm35339", "Golga7", "Gon4l", "Guca1a+1700001C19Rik", "H2ax+Dpagt1", "Hagh+Meiob", "Ift140", "Ilvbl", "Irf4", "Kmt2b", "LOC115487679+Tfcp2l1", "Lpin3", "Ly9", "Lyve1", "Med20+Usp49+Gm20517", "Mertk", "Mettl15", "Mgme1", "Mir290b+Nlrp12+Mir292b", "Mmp12", "Mppe1", "Mpzl1", "Msantd2", "Myof", "Nars2", "Nfya", "Nhsl2", "Nme7", "Npdc1", "Paxip1", "Pcsk5", "Pigl", "Plekhg3", "Ppil1", "Ppp2r3d", "Pradc1", "Prdm9", "Prkca", "Rasa4", "Rbm43", "Rhbdf1", "Rtp4", "Sema3f", "Sh3bp5l", "Shf", "Shroom3", "Slc15a4", "Slc41a3", "Slc44a2", "Slc45a4", "Smyd1", "Sorl1", "Spns2", "Spring1", "Stk11ip", "Sult2a8", "Syne1", "Szt2", "Tdg", "Telo2", "Tepsin", "Tk2", "Tmprss2", "Tns1", "Traf4", "Trim8", "Ube2u", "Uevld", "Ulk1", "Unc5b", "Unk", "Wdr19", "Yeats2", "Zbtb20+Mir568", "Zfp446", "Zfp944", "Zfp984", "Znrf3")
+)
+dexseq_list[[5]] = union(dexseq_list[[1]], dexseq_list[[2]])
+dexseq_list[[4]] = setdiff(dexseq_list[[5]], dexseq_list[[3]])
+names(dexseq_list) = names(ground_truth_lists)
+
+
+round(jaccard_index(ground_truth_lists$WT_IMP2, dexseq_list$WT_IMP2)[[1]]*1000, 2)
+round(jaccard_index(ground_truth_lists$mCherry_IMP2, dexseq_list$mCherry_IMP2)[[1]]*1000, 2)
+round(jaccard_index(ground_truth_lists$WT_mCherry, dexseq_list$WT_mCherry)[[1]]*1000, 2)
+round(jaccard_index(ground_truth_lists$`WT/mCherry_IMP2 - WT_mCherry`, dexseq_list$`WT/mCherry_IMP2 - WT_mCherry`)[[1]]*1000, 2)
+round(jaccard_index(ground_truth_lists$`WT/mCherry_IMP2`, dexseq_list$`WT/mCherry_IMP2`)[[1]]*1000, 2)
 
 round(jaccard_index(sig_genes_id$WT_IMP2, ground_truth_lists$WT_IMP2)[[1]]*1000, 2)
 round(jaccard_index(sig_genes_id$mCherry_IMP2, ground_truth_lists$mCherry_IMP2)[[1]]*1000, 2)
